@@ -15,3 +15,8 @@
 
 [credential]
 	helper = ! gh auth git-credential
+
+# Machine-local overrides (unversioned, same pattern as ~/.zshrc.local).
+# Sourced only if you create the file.
+[include]
+	path = "~/.gitconfig.local"
