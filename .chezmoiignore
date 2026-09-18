@@ -1,6 +1,11 @@
 # Non-prefixed entries in the source state would be copied into $HOME.
 # Everything below is repository tooling/documentation, not dotfiles.
 
+# Cloud tool config and credentials are machine-specific and interactive
+# (aws configure, az login). Never manage — or publish — anything here.
+.aws
+.azure
+
 README.md
 LICENSE
 CONTRIBUTING.md

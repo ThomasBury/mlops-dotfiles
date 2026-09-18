@@ -87,6 +87,12 @@ chezmoi update               # pull the repo and apply
 Machine-specific extras go in `~/.zshrc.local` (unversioned, sourced
 automatically if present).
 
+`~/.aws` and `~/.azure` are never managed: their contents are
+machine-specific and interactive (`aws configure`, `az login`) and may
+include credentials. These paths are excluded via `.chezmoiignore`, so
+no future change to this repo can accidentally pull them into the
+managed set.
+
 ## Updating tools
 
 ```bash
