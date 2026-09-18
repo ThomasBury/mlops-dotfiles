@@ -1,0 +1,44 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# CI validates configuration rendering and shell loading only.
+# The toolchain install (26 CLIs) is deliberately skipped here; use
+# a fresh machine or container to verify the full bootstrap.
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
+      - name: Install chezmoi
+        run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+
+      - name: Seed non-interactive identity
+        run: |
+          mkdir -p "$HOME/.config/chezmoi"
+          printf '[data]\n  name = "CI"\n  email = "ci@example.com"\n' \
+            > "$HOME/.config/chezmoi/chezmoi.toml"
+
+      - name: Apply dotfiles
+        run: |
+          "$HOME/.local/bin/chezmoi" init --source "$PWD" --apply
+
+      - name: Syntax check
+        run: zsh -n "$HOME/.zshrc"
+
+      - name: Load test with applied Oh My Zsh and plugins
+        run: |
+          test_dir="$(mktemp -d)"
+          ln -s "$HOME/.zshrc" "$test_dir/.zshrc"
+          ZDOTDIR="$test_dir" zsh -i -c 'echo "zshrc load OK"'
