@@ -60,7 +60,7 @@ Because chezmoi only asks for a value when it's missing
 | Layer | Managed by | Contents |
 |-------|------------|----------|
 | Shell | chezmoi | `.zshrc` (Oh My Zsh + fzf-tab, autosuggestions, syntax-highlighting), `.gitconfig` |
-| Prompt | Starship | defaults (no custom config; add `~/.config/starship.toml` when needed) |
+| Prompt | Starship | defaults until you drop a config at `~/.config/starship.toml` — Starship picks it up automatically, nothing in the shell is involved |
 | Toolchain | mise | 26 pinned CLIs: python, uv, nvim, fzf, ripgrep, kubectl, helm, k9s, terraform, opentofu, aws-cli, azure-cli, lazygit, atuin, zoxide, … |
 | Plugins | chezmoi externals | cloned once, floating until you run `chezmoi apply --refresh-externals` |
 | Identity | `chezmoi init` prompt | stored in `~/.config/chezmoi/chezmoi.toml`, never committed |
