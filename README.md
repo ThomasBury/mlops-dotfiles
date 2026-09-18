@@ -22,12 +22,25 @@ What happens, in order:
 1. The script downloads chezmoi into `~/.local/bin`.
 2. chezmoi clones this repository to `~/.local/share/chezmoi`.
 3. It asks you twice: "Git user name" and "Git email". Type your answers.
-4. It runs the setup scripts: base packages via `apt` (sudo), then mise,
-   then all 26 pinned CLI tools, then Oh My Zsh and three Zsh plugins.
+4. It runs the setup scripts, in numbered order:
+   `run_once_before_10-prereqs.sh` (base packages via `apt`, then the
+   mise binary) and `run_onchange_after_20-mise-install.sh` (the pinned
+   toolchain), then Oh My Zsh and three Zsh plugins.
 5. It renders `~/.zshrc` and `~/.gitconfig` (your answers go into the
    gitconfig). Start a new shell and you're done.
+6. Make zsh your login shell, or you'll be back in bash after the next
+   login: `chsh -s "$(command -v zsh)"`.
+
+Already have your own `~/.zshrc` or `~/.gitconfig`? Back them up
+first. I verified this with chezmoi 2.72.2: when the repo defines a
+file at a path that already exists, `chezmoi init --apply` replaces the
+file in place and leaves no backup. Make a copy of the dotfiles you
+care about before running the one-liner.
 
 First run takes a few minutes — the toolchain is the slow part.
+
+Forking this for your own machine? See [CONTRIBUTING.md](CONTRIBUTING.md)
+for the three things to change.
 
 ## Personal info: what gets asked, where it goes, how to change it
 
@@ -51,9 +64,8 @@ chezmoi apply          # re-renders ~/.gitconfig with the new values
 
 Setup on a machine without a prompt (CI, Docker) works the same way —
 pre-seed the config file, then run `chezmoi apply` instead of `init --apply`.
-Because chezmoi only asks for a value when it's missing
-(`promptStringOnce`), it will never re-ask you on later
-`chezmoi update --init` runs; it reuses your saved answers.
+Chezmoi only prompts when no saved answer exists, so it never re-asks on
+later `chezmoi update --init` runs; it reuses your answers.
 
 ## What you get
 
@@ -61,8 +73,8 @@ Because chezmoi only asks for a value when it's missing
 |-------|------------|----------|
 | Shell | chezmoi | `.zshrc` (Oh My Zsh + fzf-tab, autosuggestions, syntax-highlighting), `.gitconfig` |
 | Prompt | Starship | defaults until you drop a config at `~/.config/starship.toml` — Starship picks it up automatically, nothing in the shell is involved |
-| Toolchain | mise | 26 pinned CLIs: python, uv, nvim, fzf, ripgrep, kubectl, helm, k9s, terraform, opentofu, aws-cli, azure-cli, lazygit, atuin, zoxide, … |
-| Plugins | chezmoi externals | cloned once, floating until you run `chezmoi apply --refresh-externals` |
+| Toolchain | mise | the CLIs in `mise.toml`, pinned by `mise.lock`: python, uv, nvim, fzf, ripgrep, kubectl, helm, k9s, terraform, opentofu, aws-cli, azure-cli, lazygit, atuin, zoxide, … |
+| Plugins | chezmoi externals | cloned once; tracking upstream until you run `chezmoi apply --refresh-externals` |
 | Identity | `chezmoi init` prompt | stored in `~/.config/chezmoi/chezmoi.toml`, never committed |
 
 CLI tool versions live in `mise.lock` and install with
@@ -84,13 +96,19 @@ Debian/Ubuntu Linux. The bootstrap installs base packages via `apt`
 with sudo; everything after that is user-level and touches no system
 files.
 
+Other systems degrade gracefully: on macOS the prereqs script prints
+"only Linux is currently supported; skipping", and on a Linux without
+`apt-get` it prints "No apt-get; assuming base packages are present".
+The rest of the toolchain comes from mise and behaves the same on both
+paths.
+
 ## Daily use
 
 ```bash
 chezmoi edit ~/.zshrc        # edit the source of a managed file
 chezmoi apply                # render source state into $HOME
 chezmoi diff                 # preview what would change
-chezmoi update               # pull the repo and apply
+chezmoi update               # git pull --autostash --rebase in the source dir, then apply
 ```
 
 Machine-specific extras go in `~/.zshrc.local` (unversioned, sourced
@@ -106,12 +124,12 @@ managed set.
 
 Full details live in the
 [chezmoi docs](https://www.chezmoi.io/); here is the model that
-matters for this repo. There are no symlinks. `~/mlops-dotfiles`
-is the master copy, and `chezmoi apply` renders it into `$HOME`
-by writing real files:
+matters for this repo. There are no symlinks. The source directory
+(chezmoi's default: `~/.local/share/chezmoi`) is the master copy, and
+`chezmoi apply` renders it into `$HOME` by writing real files:
 
 ```text
-~/mlops-dotfiles (source, in git)          $HOME (rendered copy)
+source dir (default ~/.local/share/chezmoi)     $HOME (rendered copy)
   dot_zshrc           ── chezmoi apply ──▸  ~/.zshrc
   dot_gitconfig.tmpl  ── chezmoi apply ──▸  ~/.gitconfig
                                             + name/email read from
@@ -163,16 +181,16 @@ tests/test-zsh.sh
 This runs a syntax check, loads the config in an isolated `ZDOTDIR`,
 verifies key bindings, and checks that every tool resolves through
 mise. CI runs a chezmoi apply, a zsh syntax check and an interactive
-load test on every push; it skips the 26-tool install. Secrets are
-scanned by gitleaks over the full commit history.
+load test on every push; it skips the full toolchain install. Secrets
+are scanned by gitleaks over the full commit history.
 
 ### Full end-to-end bootstrap test (local Docker, not CI)
 
 Simulates a fresh Ubuntu 24.04 machine inside a container and runs the
-real bootstrap (apt packages, mise, all 26 pinned tools, Oh My Zsh +
-plugins), then the full test suite. Kept out of GitHub Actions because
-the toolchain install would blow the runners' network/API limits on
-every push.
+real bootstrap (apt packages, mise, the whole pinned toolchain, Oh My
+Zsh + plugins), then the full test suite. Kept out of GitHub Actions
+because the toolchain install would blow the runners' network/API
+limits on every push.
 
 ```bash
 tests/docker-bootstrap.sh          # cached: mise downloads persist between runs
@@ -191,9 +209,18 @@ installs. The first cold run takes a few minutes.
   hasn't seen before; the setup script already runs
   `mise trust ~/.config/mise/config.toml` — re-run it if you reset
   `~/.local/share/mise`.
-- **I answered the prompts wrong.** Fix it with
+- **Wrong answer to a prompt.** Fix it with
   `chezmoi edit-config && chezmoi apply` (see the personal info
   section above).
+
+## Removing chezmoi
+
+chezmoi leaves no daemons behind. To detach: delete the source
+directory and the config directory (`rm -rf ~/.local/share/chezmoi
+~/.config/chezmoi`) and drop the chezmoi entry from your shell config
+if you sourced one. The rendered files (`~/.zshrc`, `~/.gitconfig`,
+`~/.config/mise/…`) are plain files and stay put; delete them by hand
+if you want a truly clean slate.
 
 ## Repository layout
 
