@@ -69,6 +69,12 @@ state, and you pick when to refresh. The shell keeps standard
 Emacs/readline key bindings (Ctrl-R belongs to
 [Atuin](https://atuin.sh/)).
 
+Python development tools (ruff, ty, pytest, ipython, …) are
+deliberately not pinned globally: their versions belong to each
+project, where `uv` picks them up from `pyproject.toml`. Run a tool on
+demand with `uvx ruff check`, or install a stable user-level shim with
+`uv tool install ruff`.
+
 ## Requirements
 
 Debian/Ubuntu Linux. The bootstrap installs base packages via `apt`
