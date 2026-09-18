@@ -1,0 +1,93 @@
+# =============================================================================
+# Global mise tool configuration
+#
+# User-level development CLI toolchain. Versions are pinned in mise.lock
+# (committed to this repository); bump deliberately with:
+#
+#   cd <chezmoi source>/private_dot_config/mise
+#   mise up         # upgrade tools
+#   mise lock       # refresh lockfile
+#   chezmoi apply
+#
+# Project-specific toolchains belong in each project's own mise.toml and
+# override these workstation defaults.
+# =============================================================================
+
+[tools]
+
+# ---------------------------------------------------------------------------
+# Dotfiles management
+# ---------------------------------------------------------------------------
+
+chezmoi = "latest"
+
+# ---------------------------------------------------------------------------
+# Python / ML
+#
+# Global fallback only. Individual ML projects should specify their own
+# Python version in the project mise.toml.
+# ---------------------------------------------------------------------------
+
+python = "3.14"
+uv = "latest"
+
+# ---------------------------------------------------------------------------
+# Shell
+# ---------------------------------------------------------------------------
+
+starship = "latest"
+atuin = "latest"
+zoxide = "latest"
+direnv = "latest"
+
+fzf = "latest"
+fd = "latest"
+ripgrep = "latest"
+eza = "latest"
+bat = "latest"
+
+# ---------------------------------------------------------------------------
+# Structured data
+# ---------------------------------------------------------------------------
+
+jq = "latest"
+yq = "latest"
+
+# ---------------------------------------------------------------------------
+# Editor / Git
+# ---------------------------------------------------------------------------
+
+neovim = "latest"
+
+github-cli = "latest"
+lazygit = "latest"
+
+# ---------------------------------------------------------------------------
+# Containers
+# ---------------------------------------------------------------------------
+
+lazydocker = "latest"
+
+# ---------------------------------------------------------------------------
+# Kubernetes
+# ---------------------------------------------------------------------------
+
+kubectl = "latest"
+helm = "latest"
+
+k9s = "latest"
+stern = "latest"
+
+# ---------------------------------------------------------------------------
+# Infrastructure as Code
+# ---------------------------------------------------------------------------
+
+terraform = "latest"
+opentofu = "latest"
+
+# ---------------------------------------------------------------------------
+# Cloud
+# ---------------------------------------------------------------------------
+
+aws-cli = "latest"
+azure = "latest"
