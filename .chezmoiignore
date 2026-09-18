@@ -1,0 +1,9 @@
+# Non-prefixed entries in the source state would be copied into $HOME.
+# Everything below is repository tooling/documentation, not dotfiles.
+
+README.md
+LICENSE
+CONTRIBUTING.md
+
+tests
+.github

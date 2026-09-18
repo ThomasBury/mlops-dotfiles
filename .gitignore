@@ -1,0 +1,6 @@
+# OS noise
+.DS_Store
+
+# Editor
+*.swp
+*.swo
