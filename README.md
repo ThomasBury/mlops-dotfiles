@@ -99,6 +99,45 @@ include credentials. These paths are excluded via `.chezmoiignore`, so
 no future change to this repo can accidentally pull them into the
 managed set.
 
+## How it works
+
+Full details live in the
+[chezmoi docs](https://www.chezmoi.io/); here is the model that
+matters for this repo. There are no symlinks. `~/mlops-dotfiles`
+is the master copy, and `chezmoi apply` renders it into `$HOME`
+by writing real files:
+
+```text
+~/mlops-dotfiles (source, in git)          $HOME (rendered copy)
+  dot_zshrc           ── chezmoi apply ──▸  ~/.zshrc
+  dot_gitconfig.tmpl  ── chezmoi apply ──▸  ~/.gitconfig
+                                            + name/email read from
+                                            ~/.config/chezmoi/chezmoi.toml
+```
+
+`$HOME` is disposable: from a clone of this repo, `chezmoi init`
+and `apply` rebuild every managed file. Editing a rendered file
+directly works for a moment, and the next `apply` overwrites it.
+Edit the source instead.
+
+The filenames are the wiring:
+
+| Prefix/suffix | Meaning | Example |
+|---|---|---|
+| `dot_` | becomes a dotfile | `dot_zshrc` → `~/.zshrc` |
+| `.tmpl` | run the template engine first; `.name`/`.email` come from your `chezmoi init` answers | `dot_gitconfig.tmpl` |
+| `private_` | restrictive permissions on the target | `private_dot_config/` |
+| `run_once_*` / `run_onchange_*` | scripts: first runs once per machine; second re-runs only when its content (including the hashed `mise` config) changes | `run_once_before_10-prereqs.sh.tmpl` |
+
+Where to edit what:
+
+| Change | Edit | Then |
+|---|---|---|
+| Shell (aliases, plugins, bindings) | `dot_zshrc` | `chezmoi apply`, commit |
+| Git identity, machine values | `chezmoi edit-config` | `chezmoi apply` |
+| Machine-only settings | `~/.zshrc.local` / `~/.gitconfig.local` (unversioned) | reload shell / nothing to apply |
+| Tool versions | `mise` `config.toml` (see Updating tools) | `mise up && mise lock`, commit |
+
 ## Updating tools
 
 ```bash
