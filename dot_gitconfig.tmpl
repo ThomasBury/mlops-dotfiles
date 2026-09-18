@@ -1,0 +1,14 @@
+# =============================================================================
+# Git configuration, rendered by chezmoi.
+#
+# Identity comes from the data collected by `chezmoi init`
+# (see .chezmoi.toml.tmpl) and is stored locally in
+# ~/.config/chezmoi/chezmoi.toml — never in this repository.
+# =============================================================================
+
+[user]
+	name = {{ .name | quote }}
+	email = {{ .email | quote }}
+
+[init]
+	defaultBranch = main
