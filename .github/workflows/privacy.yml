@@ -17,7 +17,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Scan for secrets
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install gitleaks
+        run: |
+          v=v8.24.3
+          curl -fLso gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/${v}/gitleaks_${v#v}_linux_x64.tar.gz"
+          sudo tar -xzf gitleaks.tgz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      # Full-history scan on every push. Unlike commit-range scans this
+      # cannot fail on a root commit or any other boundary revision.
+      - name: Scan history for secrets
+        run: gitleaks git --redact --no-banner -v --log-opts=--all "$GITHUB_WORKSPACE"

@@ -36,8 +36,11 @@ First run takes a few minutes — the toolchain is the slow part.
 **Where it lives:** in `~/.config/chezmoi/chezmoi.toml`, a file
 chezmoi creates and keeps at `0600` permissions. Nothing in this
 repository contains your name or email; `dot_gitconfig.tmpl` reads them
-from that local file when it renders `~/.gitconfig`. A GitHub Actions
-workflow scans every push for personal data, and gitleaks guards secrets.
+from that local file when it renders `~/.gitconfig`, so there is nowhere
+else the values could come from — and nowhere in the repo to commit
+them. CI additionally runs
+[gitleaks](https://github.com/gitleaks/gitleaks) over the full history
+on every push to guard against committed secrets.
 
 **To change it later**, edit the local config and re-render:
 
@@ -160,8 +163,8 @@ tests/test-zsh.sh
 This runs a syntax check, loads the config in an isolated `ZDOTDIR`,
 verifies key bindings, and checks that every tool resolves through
 mise. CI runs a chezmoi apply, a zsh syntax check and an interactive
-load test on every push; it skips the 26-tool install and doesn't scan
-for personal data. Secrets are scanned by gitleaks.
+load test on every push; it skips the 26-tool install. Secrets are
+scanned by gitleaks over the full commit history.
 
 ### Full end-to-end bootstrap test (local Docker, not CI)
 
