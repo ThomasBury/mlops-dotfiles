@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# =============================================================================
+# run_onchange_after: install/refresh the CLI toolchain with mise
+#
+# Re-runs automatically whenever the mise configuration or lockfile changes
+# (chezmoi hashes this script; the hashes below are part of it):
+#
+#   config.toml sha256: {{ include "private_dot_config/mise/config.toml" | sha256sum }}
+#   mise.lock   sha256: {{ include "private_dot_config/mise/mise.lock" | sha256sum }}
+#
+# Set GITHUB_TOKEN (e.g. via `gh auth token`) to avoid GitHub API rate
+# limits on first install.
+# =============================================================================
+
+set -Eeuo pipefail
+
+# CI tests configuration loading, not upstream tool installers.
+if [[ -n "${CI:-}" ]]; then
+    echo "CI detected; skipping full toolchain install"
+    exit 0
+fi
+
+MISE="$HOME/.local/bin/mise"
+
+if [[ ! -x "$MISE" ]]; then
+    echo "mise not found at $MISE; prereqs script did not run?" >&2
+    exit 1
+fi
+
+# mise refuses to read config files it has not seen before.
+"$MISE" trust "$HOME/.config/mise/config.toml" >/dev/null 2>&1 || true
+
+# Install exactly what mise.lock records; fail on missing lock entries.
+"$MISE" install --yes --locked

@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+# =============================================================================
+# run_once_before: OS prerequisites + mise binary
+#
+# Runs once per machine before dotfiles are applied. Idempotent; safe to
+# re-run manually with `chezmoi apply --force`.
+# =============================================================================
+
+set -Eeuo pipefail
+
+{{ if ne .chezmoi.os "linux" -}}
+echo "prereqs: only Linux is currently supported; skipping" >&2
+exit 0
+{{ end -}}
+
+log() {
+    printf '\n\033[1;34m==>\033[0m %s\n' "$*"
+}
+
+
+# -----------------------------------------------------------------------------
+# Base OS packages (Debian/Ubuntu)
+# -----------------------------------------------------------------------------
+
+if command -v apt-get >/dev/null 2>&1; then
+
+    BASE_PACKAGES=(
+        ca-certificates
+        curl
+        git
+        unzip
+        xz-utils
+        zsh
+    )
+
+    missing_packages=()
+
+    for package in "${BASE_PACKAGES[@]}"; do
+        dpkg -s "$package" >/dev/null 2>&1 || missing_packages+=("$package")
+    done
+
+    if ((${#missing_packages[@]})); then
+        log "Installing base OS packages: ${missing_packages[*]}"
+
+        sudo apt-get update
+        sudo apt-get install -y "${missing_packages[@]}"
+    else
+        log "Base OS packages already installed"
+    fi
+
+else
+    log "No apt-get; assuming base packages are present"
+fi
+
+
+# -----------------------------------------------------------------------------
+# mise binary
+# -----------------------------------------------------------------------------
+
+# ~/.local/bin must exist before the chezmoi one-liner (`-b` fails on a
+# fresh home) and before mise installs itself there.
+mkdir -p "$HOME/.local/bin"
+
+if [[ ! -x "$HOME/.local/bin/mise" ]]; then
+    log "Installing mise"
+
+    curl -fsSL https://mise.run | sh
+else
+    log "mise already installed"
+fi
