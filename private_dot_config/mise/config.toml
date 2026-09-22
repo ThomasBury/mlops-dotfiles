@@ -59,6 +59,9 @@ yq = "latest"
 
 neovim = "latest"
 
+# Required by the npx-based VS Code MCP servers (context7, firecrawl).
+node = "latest"
+
 github-cli = "latest"
 lazygit = "latest"
 
