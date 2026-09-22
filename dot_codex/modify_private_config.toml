@@ -1,0 +1,2 @@
+{{- /* chezmoi:modify-template */ -}}
+{{ .chezmoi.stdin | fromToml | setValueAtPath "mcp_servers.context7" (dict "command" (joinPath .chezmoi.homeDir ".local/bin/context7-mcp")) | toToml }}

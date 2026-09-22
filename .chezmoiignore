@@ -6,9 +6,15 @@
 .aws
 .azure
 
+# Context7 credentials stay local, including the old CLI credential store.
+.config/context7
+.config/context7/**
+
 README.md
 LICENSE
 CONTRIBUTING.md
 
 tests
 .github
+
+scripts

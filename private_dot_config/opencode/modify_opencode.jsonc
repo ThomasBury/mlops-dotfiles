@@ -1,0 +1,2 @@
+{{- /* chezmoi:modify-template */ -}}
+{{ .chezmoi.stdin | default "{}" | fromJsonc | deleteValueAtPath "mcp.context7" | setValueAtPath "mcp.servers.context7" (dict "type" "local" "command" (list (joinPath .chezmoi.homeDir ".local/bin/context7-mcp"))) | toPrettyJson }}

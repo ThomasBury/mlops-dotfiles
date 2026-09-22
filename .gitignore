@@ -4,3 +4,7 @@
 # Editor
 *.swp
 *.swo
+
+# Context7 credentials must never enter the source state.
+**/context7/
+**/private_context7/

@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+key_file="$HOME/.config/context7/api-key"
+if [ ! -r "$key_file" ]; then
+    echo 'context7-mcp: create ~/.config/context7/api-key with owner-only access.' >&2
+    exit 1
+fi
+CONTEXT7_API_KEY=$(cat "$key_file")
+if [ -z "$CONTEXT7_API_KEY" ]; then
+    echo 'context7-mcp: ~/.config/context7/api-key is empty.' >&2
+    exit 1
+fi
+export CONTEXT7_API_KEY
+PATH="$HOME/.local/share/mise/shims:${PATH:-/usr/bin:/bin}"
+export PATH
+exec npx -y @upstash/context7-mcp@4.1.1
