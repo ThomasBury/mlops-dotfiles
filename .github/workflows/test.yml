@@ -30,6 +30,9 @@ jobs:
           printf '[data]\n  name = "CI"\n  email = "ci@example.com"\n' \
             > "$HOME/.config/chezmoi/chezmoi.toml"
 
+      - name: Test Context7 setup and local leak checks
+        run: python3 tests/test-context7.py
+
       - name: Apply dotfiles
         run: |
           "$HOME/.local/bin/chezmoi" init --source "$PWD" --apply
