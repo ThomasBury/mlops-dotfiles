@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# =============================================================================
+# run_onchange_after: install the JetBrainsMono Nerd Font
+#
+# Re-runs automatically whenever this file's content changes, because chezmoi
+# hashes the rendered script. Bump VERSION and SHA256 together.
+#
+# Font:    JetBrainsMono Nerd Font
+# Release: https://github.com/ryanoasis/nerd-fonts/releases/tag/v3.5.1
+# Asset:   JetBrainsMono.tar.xz
+# =============================================================================
+
+set -Eeuo pipefail
+
+VERSION="v3.5.1"
+FONT="JetBrainsMono"
+URL="https://github.com/ryanoasis/nerd-fonts/releases/download/${VERSION}/${FONT}.tar.xz"
+SHA256="04d5e8f903693f9dd13e16f867e994834e681eb3c72c0d337a770dcda09010cf"
+DEST="$HOME/.local/share/fonts/${FONT}NerdFont"
+
+log() {
+    printf '\n\033[1;34m==>\033[0m %s\n' "$*"
+}
+
+if ! command -v fc-cache >/dev/null 2>&1; then
+    echo "fontconfig (fc-cache) not found; skipping Nerd Font install" >&2
+    exit 0
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+log "Downloading ${FONT} Nerd Font ${VERSION}"
+curl -fsSL "$URL" -o "$tmp/font.tar.xz"
+
+echo "${SHA256}  $tmp/font.tar.xz" | sha256sum -c -
+
+mkdir -p "$DEST"
+tar -xJf "$tmp/font.tar.xz" -C "$DEST"
+fc-cache -f "$DEST" >/dev/null
+
+echo "  installed ${FONT} Nerd Font ${VERSION} to $DEST"
