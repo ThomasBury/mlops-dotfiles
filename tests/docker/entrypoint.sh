@@ -31,9 +31,6 @@ export PATH="$HOME/.local/bin:$PATH"
 
 log "applying dotfiles from /dotfiles (full bootstrap: apt, mise, 26 tools)"
 # GITHUB_TOKEN avoids unauthenticated GitHub API rate limits (60 req/h).
-if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    export GITHUB_TOKEN
-fi
 "$HOME/.local/bin/chezmoi" init --source /dotfiles --apply
 
 log "running full local test suite"
