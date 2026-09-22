@@ -1,0 +1,58 @@
+{
+	"servers": {
+		"github": {
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/",
+			"gallery": true
+		},
+		"markitdown": {
+			"type": "stdio",
+			"command": "uvx",
+			"args": [
+				"markitdown-mcp"
+			],
+			"gallery": true
+		},
+		"context7": {
+			"type": "stdio",
+			"command": {{ joinPath .chezmoi.homeDir ".local/bin/context7-mcp" | toJson }},
+			"gallery": true
+		},
+		"duckdb": {
+			"type": "stdio",
+			"command": "uvx",
+			"args": [
+				"mcp-server-duckdb",
+				"--db-path",
+				"${input:duckdb_db_path}"
+			],
+			"gallery": true
+		},
+		"firecrawl": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"firecrawl-mcp@latest"
+			],
+			"env": {
+				"FIRECRAWL_API_KEY": "${input:firecrawl_api_key}"
+			},
+			"gallery": true
+		}
+	},
+	"inputs": [
+		{
+			"id": "duckdb_db_path",
+			"type": "promptString",
+			"description": "Path to the DuckDB database file (e.g., /path/to/database.duckdb)",
+			"password": false
+		},
+		{
+			"id": "firecrawl_api_key",
+			"type": "promptString",
+			"description": "Firecrawl API Key (get from https://www.firecrawl.dev/app/api-keys)",
+			"password": true
+		}
+	]
+}

@@ -10,6 +10,16 @@
 .config/context7
 .config/context7/**
 
+# VS Code: only the declarative files are managed, via explicit source paths:
+#   private_dot_config/Code/User/{settings.json,mcp.json.tmpl}
+#   dot_vscode/argv.json.tmpl
+# The rest of ~/.config/Code/User and ~/.vscode is machine state and must
+# never be `chezmoi add`ed wholesale: globalStorage/, workspaceStorage/, History/, mcp/,
+# profiles/, state.vscdb*, storage.json, ~/.vscode/extensions/ and
+# ~/.vscode-shared/ (state.vscdb can hold OAuth tokens). Comments only here —
+# a `.vscode` pattern would also hide the managed dot_vscode/ file above.
+# The Kilo MCP modify template manages only its Context7 entry in globalStorage.
+
 README.md
 LICENSE
 CONTRIBUTING.md

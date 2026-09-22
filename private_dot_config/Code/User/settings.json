@@ -1,0 +1,49 @@
+{
+    "git.confirmSync": false,
+    "workbench.colorTheme": "Andromeda",
+    "[python]": {
+        "editor.formatOnType": true,
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "editor.formatOnSave": true,
+    "jupyter.askForKernelRestart": false,
+    "terminal.integrated.inheritEnv": true,
+    "redhat.telemetry.enabled": true,
+    "notebook.output.scrolling": true,
+    "notebook.output.textLineLimit": 50,
+    "diffEditor.codeLens": true,
+    "kilo-code.allowedCommands": [
+        "npm test",
+        "npm install",
+        "tsc",
+        "git log",
+        "git diff",
+        "git show"
+    ],
+    "marimo.marimoPath": "uv run marimo",
+    "chat.mcp.discovery.enabled": {
+        "claude-desktop": true,
+        "windsurf": true,
+        "cursor-global": true,
+        "cursor-workspace": true
+    },
+    "jupyter.interactiveWindow.creationMode": "perFile",
+    "docker.extension.enableComposeLanguageServer": false,
+    "docker.extension.dockerEngineAvailabilityPrompt": false,
+    "terminal.integrated.commandsToSkipShell": [
+        "kilo-code.new.agentManagerOpen",
+        "kilo-code.new.agentManager.showTerminal",
+        "kilo-code.new.agentManager.previousTerminal",
+        "kilo-code.new.agentManager.nextTerminal"
+    ],
+    "kilo-code.new.agentWorkStyle": "skipped",
+    "yaml.disableSchemaDetection": [
+        "**/.github/workflows/*.yml",
+        "**/.github/workflows/*.yaml",
+        "**/.gitea/workflows/*.yml",
+        "**/.gitea/workflows/*.yaml",
+        "**/.forgejo/workflows/*.yml",
+        "**/.forgejo/workflows/*.yaml"
+    ],
+    "python.analysis.typeCheckingMode": "standard"
+}
