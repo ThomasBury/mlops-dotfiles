@@ -9,8 +9,8 @@ here. Both are short.
 Your identity never enters the repo:
 
 - Git name and email are asked once on first `chezmoi init` and live
-  only in your local `~/.config/chezmoi/chezmoi.toml`. The README's
-  "Personal info" section has the details.
+  only in your local `~/.config/chezmoi/chezmoi.toml`. See
+  [Git identity and private files](README.md#git-identity-and-private-files).
 - Machine-only settings belong in `~/.zshrc.local` and
   `~/.gitconfig.local` — unversioned, sourced automatically when
   present.
