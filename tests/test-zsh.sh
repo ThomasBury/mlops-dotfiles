@@ -178,21 +178,21 @@ TOOLS=(
 # whence -p resolves the underlying binary, ignoring aliases such as
 # Oh My Zsh's uv plugin alias (uv='noglob uv').
 
-ZDOTDIR="$TMPDIR_ZSH" zsh -i -c "
+ZDOTDIR="$TMPDIR_ZSH" zsh -i -c '
     tools_missing=0
     not_mise=0
 
-    for tool in ${TOOLS[*]}; do
-        command -v \"\$tool\" >/dev/null 2>&1 || {
-            print -u2 \"missing: \$tool\"
+    for tool in "$@"; do
+        command -v "$tool" >/dev/null 2>&1 || {
+            print -u2 "missing: $tool"
             tools_missing=1
             continue
         }
 
-        resolved=\"\$(whence -p \"\$tool\" 2>/dev/null)\" || continue
+        resolved="$(whence -p "$tool" 2>/dev/null)" || continue
 
-        if [[ \"\$resolved\" != *mise* ]]; then
-            print -u2 \"not resolved via mise: \$tool -> \$resolved\"
+        if [[ "$resolved" != *mise* ]]; then
+            print -u2 "not resolved via mise: $tool -> $resolved"
             not_mise=1
         fi
     done
@@ -201,7 +201,7 @@ ZDOTDIR="$TMPDIR_ZSH" zsh -i -c "
         exit 1
     fi
     exit 0
-" || fail "toolchain incomplete or shadowed (run: mise install)"
+' test-tools "${TOOLS[@]}" || fail "toolchain incomplete or shadowed (run: mise install)"
 
 pass "all ${#TOOLS[@]} tools available and resolving through mise"
 
