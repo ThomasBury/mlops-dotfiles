@@ -33,6 +33,9 @@ jobs:
       - name: Test Context7 setup and local leak checks
         run: python3 tests/test-context7.py
 
+      - name: Test shared agent instructions
+        run: python3 tests/test-agent-instructions.py
+
       - name: Apply dotfiles
         run: |
           "$HOME/.local/bin/chezmoi" init --source "$PWD" --apply

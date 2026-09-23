@@ -17,6 +17,7 @@ the shell.
 - [Details](#details)
   - [Git identity and private files](#git-identity-and-private-files)
   - [Context7 setup](#context7-setup)
+  - [Shared agent instructions](#shared-agent-instructions)
   - [How installation works](#how-installation-works)
   - [How managed files work](#how-managed-files-work)
   - [Updating tools](#updating-tools)
@@ -72,7 +73,7 @@ what to change.
 | Editor | chezmoi and `code` | VS Code settings, MCP definitions, flags, and extensions |
 | Terminal | chezmoi | Ghostty font setting |
 | Font | install script | Checksum-verified JetBrainsMono Nerd Font |
-| Assistants | chezmoi | Context7 for Codex, OpenCode, Kilo, and VS Code |
+| Assistants | chezmoi | Context7 plus shared instructions for Codex, OpenCode, and Kilo; VS Code native MCP |
 | Identity | chezmoi prompt | Local Git name and email |
 
 ## Daily use
@@ -172,6 +173,73 @@ file. Repeat in VS Code launched from the desktop, for both native MCP and
 Kilo. The offline test uses a dummy key and fake `npx`; it does not validate
 account access or the editor UI.
 
+### Shared agent instructions
+
+Edit [.chezmoitemplates/AGENTS.md](.chezmoitemplates/AGENTS.md) to change the
+engineering defaults for all three agents. Chezmoi's
+[shared templates](https://www.chezmoi.io/user-guide/templating/) render the
+same text into these native instruction files:
+
+| Agent | Global destination |
+|---|---|
+| [Codex CLI/editor](https://developers.openai.com/codex/guides/agents-md/) | `~/.codex/AGENTS.md` |
+| [OpenCode V2 CLI/editor](https://opencode.ai/v2/docs/instructions) | `~/.config/opencode/AGENTS.md` |
+| [Kilo CLI/editor](https://kilo.ai/docs/customize/custom-instructions) | `~/.config/kilo/AGENTS.md` |
+
+The three `AGENTS.md.tmpl` files only include that shared template; edit the
+shared text rather than the wrappers or installed copies. The template
+directory itself does not deploy into your home.
+
+Global instructions describe reusable preferences. Keep repository commands,
+architecture, and exceptions in that project's `AGENTS.md`. The shared text
+explicitly defers to project conventions because agents load instructions in
+different orders. Stack defaults are conditional; they do not request tool
+installation or migration. Existing Ponytail skills and commands remain
+separate. CodeRabbit and unmanaged agents are outside this setup.
+
+To activate only these instructions, run the following from this repository.
+First, back up existing destinations locally and preview the changes:
+
+```bash
+agent_source="$PWD"
+agent_backup="$(mktemp -d "$HOME/agent-instructions-backup.XXXXXX")"
+for relative in .codex/AGENTS.md .config/opencode/AGENTS.md .config/kilo/AGENTS.md; do
+    if [ -f "$HOME/$relative" ]; then
+        mkdir -p "$agent_backup/$(dirname "$relative")"
+        cp -p "$HOME/$relative" "$agent_backup/$relative"
+    fi
+done
+echo "Instruction backups: $agent_backup"
+chezmoi --source "$agent_source" --refresh-externals=never --no-pager diff \
+    --exclude scripts ~/.codex/AGENTS.md \
+    ~/.config/opencode/AGENTS.md ~/.config/kilo/AGENTS.md
+```
+
+After reviewing the diff, apply those same three files and check for an empty
+diff. These commands exclude scripts and disable external refresh:
+
+```bash
+mkdir -p ~/.codex ~/.config/opencode ~/.config/kilo
+chezmoi --source "$agent_source" --refresh-externals=never apply \
+    --exclude scripts ~/.codex/AGENTS.md \
+    ~/.config/opencode/AGENTS.md ~/.config/kilo/AGENTS.md
+chezmoi --source "$agent_source" --refresh-externals=never --no-pager diff \
+    --exclude scripts ~/.codex/AGENTS.md \
+    ~/.config/opencode/AGENTS.md ~/.config/kilo/AGENTS.md
+```
+
+Start a fresh session in each CLI and editor integration to load the files.
+For a smoke check, ask each agent to summarize its global engineering defaults
+and name the source file. Then use a scratch project whose `AGENTS.md` says
+"For this project, explain changes in French." Start another fresh session
+there and ask which language it should use and why. It should retain the
+global defaults while following the project's language instruction. Codex's
+`AGENTS.override.md`, if present, takes precedence over its global `AGENTS.md`.
+
+The offline check verifies delivery and repeatable applies; this manual smoke
+check verifies that each installed client loads the instructions and respects
+project exceptions. This setup uses the standard configuration locations.
+
 ### How installation works
 
 The install command performs these steps in order:
@@ -229,6 +297,7 @@ Where to make each change:
 
 | Change | Edit | Then |
 |---|---|---|
+| Global agent instructions | `.chezmoitemplates/AGENTS.md` | [Targeted apply](#shared-agent-instructions), fresh sessions |
 | Shell aliases, plugins, bindings | `dot_zshrc` | `chezmoi apply`, commit |
 | Git identity and machine values | `chezmoi edit-config` | `chezmoi apply` |
 | Machine-only settings | `~/.zshrc.local` / `~/.gitconfig.local` | Reload the shell |
@@ -273,6 +342,19 @@ chezmoi apply
 ```
 
 ## Testing
+
+Run the offline agent checks (Python 3.11+, Git, and chezmoi required):
+
+```bash
+python3 tests/test-context7.py
+python3 tests/test-agent-instructions.py
+```
+
+CI runs both checks. The instruction check covers fresh and existing targets,
+identical contents, template exclusion, and no changes on a second targeted
+apply. It does not launch an agent or contact a model provider.
+
+For shell checks:
 
 ```bash
 tests/test-zsh.sh
@@ -335,6 +417,7 @@ Font. Delete those by hand only if you want a clean slate.
 
 ```text
 .chezmoi.toml.tmpl                    # prompts for git name/email on init
+.chezmoitemplates/AGENTS.md           # shared engineering instructions
 .chezmoiexternal.toml                 # Oh My Zsh + plugins (refreshPeriod = 0)
 .chezmoiignore                        # repo docs + ~/.aws, ~/.azure excluded
 dot_zshrc                             # → ~/.zshrc
@@ -342,6 +425,7 @@ dot_gitconfig.tmpl                    # → ~/.gitconfig (identity from .data)
 dot_vscode/argv.json.tmpl             # → ~/.vscode/argv.json
 private_dot_config/
 ├── mise/{config.toml,mise.lock}      # → ~/.config/mise/
+├── {opencode,kilo}/AGENTS.md.tmpl    # global instruction wrappers
 ├── ghostty/config                    # → ~/.config/ghostty/config
 └── Code/User/                        # settings.json, mcp.json.tmpl, Kilo MCP modifier
 run_once_before_10-prereqs.sh.tmpl    # apt base packages (incl. fontconfig) + mise
@@ -349,10 +433,12 @@ run_onchange_after_20-mise-install.sh.tmpl  # re-installs tools on config change
 run_onchange_after_30-vscode-extensions.sh.tmpl  # installs the extension list
 run_onchange_after_40-nerd-font.sh.tmpl  # JetBrainsMono Nerd Font, checksummed
 dot_local/bin/executable_context7-mcp # → ~/.local/bin/context7-mcp
+dot_codex/AGENTS.md.tmpl              # → ~/.codex/AGENTS.md
 dot_codex/modify_private_config.toml  # updates only Codex Context7 settings
 scripts/set-context7-key.py           # hidden prompt; writes only outside the repo
 scripts/check-context7-secrets.py     # local Git hook check
 .githooks/{pre-commit,pre-push}       # enabled with core.hooksPath
+tests/test-agent-instructions.py      # offline shared instruction delivery checks
 tests/test-context7.py                # offline launcher/config/hook checks
 tests/test-zsh.sh                     # local shell/toolchain test suite
 tests/docker-bootstrap.sh             # local Docker fresh-machine E2E (not CI)
