@@ -14,6 +14,12 @@
 .local/share/context7-mcp/node_modules
 .local/share/context7-mcp/node_modules/**
 
+# Codex plugin caches and sessions are provisioned locally, never copied.
+.codex/plugins
+.codex/plugins/**
+.codex/sessions
+.codex/sessions/**
+
 # VS Code: only the declarative files are managed, via explicit source paths:
 #   private_dot_config/Code/User/{settings.json,mcp.json.tmpl}
 #   dot_vscode/argv.json.tmpl
