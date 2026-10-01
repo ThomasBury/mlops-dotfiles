@@ -10,6 +10,10 @@
 .config/context7
 .config/context7/**
 
+# Installed npm dependencies are generated state, not managed source files.
+.local/share/context7-mcp/node_modules
+.local/share/context7-mcp/node_modules/**
+
 # VS Code: only the declarative files are managed, via explicit source paths:
 #   private_dot_config/Code/User/{settings.json,mcp.json.tmpl}
 #   dot_vscode/argv.json.tmpl

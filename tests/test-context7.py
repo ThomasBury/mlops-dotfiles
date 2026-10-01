@@ -26,6 +26,14 @@ with tempfile.TemporaryDirectory() as directory:
     key = home / ".config/context7/api-key"
     env = {**os.environ, "HOME": str(home), "PATH": "/usr/bin:/bin"}
     launcher = ["/bin/sh", str(ROOT / "dot_local/bin/executable_context7-mcp")]
+    server = home / ".local/share/context7-mcp/node_modules/.bin/context7-mcp"
+    server.parent.mkdir(parents=True)
+    server.write_text('''#!/bin/sh
+[ "$CONTEXT7_API_KEY" = "$EXPECTED_KEY" ] || exit 2
+[ "$PWD" = "$HOME" ] && [ "$#" = 0 ] || exit 3
+printf 'fake server OK\\n'
+''')
+    server.chmod(0o755)
     for content in (None, "", "\n"):
         if content is not None:
             key.parent.mkdir(parents=True, exist_ok=True)
@@ -54,24 +62,51 @@ with tempfile.TemporaryDirectory() as directory:
                     raise AssertionError("Invalid key accepted")
             assert key.read_text().strip() == TOKEN
 
-    npx = home / ".local/share/mise/shims/npx"
-    npx.parent.mkdir(parents=True)
-    npx.write_text('''#!/bin/sh
-[ "$CONTEXT7_API_KEY" = "$EXPECTED_KEY" ] || exit 2
-[ "$#" = 2 ] && [ "$1" = '-y' ] && [ "$2" = '@upstash/context7-mcp@4.1.1' ] || exit 3
-printf 'fake npx OK\\n'
-''')
-    npx.chmod(0o755)
-    result = run(launcher, env={**env, "EXPECTED_KEY": TOKEN, "CONTEXT7_API_KEY": "stale"})
+    project = base / "project"
+    project.mkdir()
+    (project / "mise.toml").write_text('[tools]\nnode = "0.0.0"\n')
+    result = run(launcher, cwd=project,
+                 env={**env, "EXPECTED_KEY": TOKEN, "CONTEXT7_API_KEY": "stale"})
     assert result.returncode == 0, result.stderr
     assert TOKEN not in result.stdout + result.stderr
-    assert "fake npx OK" in result.stdout
+    assert "fake server OK" in result.stdout
+    server.unlink()
+    result = run(launcher, env=env)
+    assert result.returncode != 0 and "dependencies missing" in result.stderr
 
     # Render each client from existing settings and check preservation and idempotence.
     chezmoi = shutil.which("chezmoi")
     assert chezmoi, "chezmoi is required"
     config = base / "chezmoi.toml"
     config.write_text('[data]\nname = "Test"\nemail = "test@example.com"\n')
+    install_source = base / "install-source"
+    packages = install_source / "dot_local/share/context7-mcp"
+    packages.mkdir(parents=True)
+    for name in ("package.json", "package-lock.json"):
+        shutil.copyfile(ROOT / "dot_local/share/context7-mcp" / name, packages / name)
+    installer = "run_onchange_after_25-context7-install.sh.tmpl"
+    shutil.copyfile(ROOT / installer, install_source / installer)
+    npm = home / ".local/share/mise/shims/npm"
+    npm.parent.mkdir(parents=True)
+    npm.write_text('''#!/bin/sh
+[ "$PWD" = "$HOME" ] || exit 2
+[ "$*" = "ci --prefix $HOME/.local/share/context7-mcp --ignore-scripts --no-audit --no-fund" ] || exit 3
+printf 'installed\\n' >> "$HOME/npm-calls"
+''')
+    npm.chmod(0o755)
+    install_env = {**env, "CI": ""}
+    install = [chezmoi, "--config", str(config), "--source", str(install_source),
+               "--destination", str(home), "--persistent-state", str(base / "install.db")]
+    assert run([*install, "apply"], cwd=project, env=install_env).returncode == 0
+    assert run([*install, "apply"], cwd=project, env=install_env).returncode == 0
+    assert (home / "npm-calls").read_text() == "installed\n"
+    # Verify the documented targeted reinstall also works after a successful apply.
+    result = run([*install, "state", "delete", "--bucket=entryState",
+                  "--key=" + str(home / "25-context7-install.sh")], env=install_env)
+    assert result.returncode == 0, result.stderr
+    result = run([*install, "apply"], env=install_env)
+    assert result.returncode == 0, result.stderr
+    assert (home / "npm-calls").read_text() == "installed\ninstalled\n"
     command = [str(home / ".local/bin/context7-mcp")]
     fixtures = {
         ".codex/config.toml": ('model = "keep"\n[mcp_servers.context7]\ncommand = "old"\nargs = ["' + TOKEN + '"]\n', "mcp_servers", {"command": command[0]}),
@@ -107,6 +142,21 @@ printf 'fake npx OK\\n'
         target.unlink()
         result = run(args, env=env)
         assert result.returncode == 0, result.stderr
+
+    # Deliver the real launcher and manifests without running workstation installers.
+    launcher_target = home / ".local/bin/context7-mcp"
+    launcher_target.parent.mkdir(parents=True, exist_ok=True)
+    manifest_targets = [home / ".local/share/context7-mcp" / name
+                        for name in ("package.json", "package-lock.json")]
+    result = run([chezmoi, "--config", str(config), "--source", str(ROOT),
+                  "--destination", str(home), "--refresh-externals=never", "apply",
+                  "--exclude", "scripts", str(launcher_target),
+                  *map(str, manifest_targets)], env=env)
+    assert result.returncode == 0, result.stderr
+    assert launcher_target.stat().st_mode & 0o111
+    assert launcher_target.read_bytes() == (ROOT / "dot_local/bin/executable_context7-mcp").read_bytes()
+    for target in manifest_targets:
+        assert target.read_bytes() == (ROOT / "dot_local/share/context7-mcp" / target.name).read_bytes()
 
     # Test hooks with real commits, including a secret removed before the push.
     repo = base / "repo"

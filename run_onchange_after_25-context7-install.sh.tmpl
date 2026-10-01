@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+# package.json sha256: {{ include "dot_local/share/context7-mcp/package.json" | sha256sum }}
+# package-lock.json sha256: {{ include "dot_local/share/context7-mcp/package-lock.json" | sha256sum }}
+
+if [ -n "${CI:-}" ]; then
+    echo "CI detected; skipping Context7 dependency installation"
+    exit 0
+fi
+
+# Use the workstation's Node selection, independent of the calling project.
+cd "$HOME"
+PATH="$HOME/.local/share/mise/shims:${PATH:-/usr/bin:/bin}"
+export PATH
+npm ci --prefix "$HOME/.local/share/context7-mcp" --ignore-scripts --no-audit --no-fund
