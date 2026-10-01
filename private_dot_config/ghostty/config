@@ -1,3 +1,4 @@
 # Ghostty terminal configuration
 # Font installed by run_onchange_after_40-nerd-font.sh.
 font-family = "JetBrainsMono Nerd Font"
+theme = Gruvbox Material Dark
