@@ -175,6 +175,8 @@ printf 'installed\\n' >> "$HOME/npm-calls"
     secret.write_text("clean")
     git("add", ".")
     git("commit", "-qm", "clean")
+    scanner = ["python3", str(repo / "scripts/check-context7-secrets.py"), "--history"]
+    assert run(scanner, cwd=repo).returncode == 0
     before = git("rev-parse", "HEAD")
     secret.write_text(TOKEN)
     git("add", ".")
@@ -188,6 +190,9 @@ printf 'installed\\n' >> "$HOME/npm-calls"
     git("add", "-u")
     git("commit", "-qm", "remove synthetic secret")
     after = git("rev-parse", "HEAD")
+    result = run(scanner, cwd=repo)
+    assert result.returncode != 0
+    assert "file with spaces.txt" in result.stderr and TOKEN not in result.stdout + result.stderr
     hook = str(ROOT / ".githooks/pre-push")
     for remote in (before, "0" * 40, "1" * 40):
         result = run([hook], cwd=repo, input=f"refs/heads/main {after} refs/heads/main {remote}\n")

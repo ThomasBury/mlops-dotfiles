@@ -17,6 +17,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Scan history for Context7 tokens
+        run: python3 scripts/check-context7-secrets.py --history
+
       - name: Install gitleaks
         run: |
           v=v8.24.3

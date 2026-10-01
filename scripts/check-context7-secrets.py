@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject Context7 tokens in the index or every commit being pushed."""
+"""Reject Context7 tokens in the index, outgoing commits, or all local history."""
 import json
 import subprocess
 import sys
@@ -25,26 +25,29 @@ def scan(*args):
 def main():
     if sys.argv[1] == "--staged":
         paths = set(scan("--cached"))
-    elif sys.argv[1] == "--pre-push":
+    elif sys.argv[1] in ("--pre-push", "--history"):
         commits = set()
-        for line in sys.stdin:
-            _, local, _, remote = line.split()
-            if not local.strip("0"):  # Deleting a remote ref sends no content.
-                continue
-            revision = local
-            if remote.strip("0") and subprocess.run(
-                ["git", "cat-file", "-e", remote + "^{commit}"],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            ).returncode == 0:
-                revision = remote + ".." + local
-            # New refs (or unknown remote tips): conservatively scan all ancestors.
-            commits.update(git("rev-list", revision).decode().splitlines())
+        if sys.argv[1] == "--history":
+            commits.update(git("rev-list", "--all").decode().splitlines())
+        else:
+            for line in sys.stdin:
+                _, local, _, remote = line.split()
+                if not local.strip("0"):  # Deleting a remote ref sends no content.
+                    continue
+                revision = local
+                if remote.strip("0") and subprocess.run(
+                    ["git", "cat-file", "-e", remote + "^{commit}"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                ).returncode == 0:
+                    revision = remote + ".." + local
+                # New refs (or unknown remote tips): scan all ancestors.
+                commits.update(git("rev-list", revision).decode().splitlines())
         paths = set()
         for commit in commits:
             # git grep prefixes historical filenames with their commit ID.
             paths.update(p.split(b":", 1)[1] for p in scan(commit))
     else:
-        raise RuntimeError("Expected --staged or --pre-push.")
+        raise RuntimeError("Expected --staged, --pre-push, or --history.")
     for path in sorted(paths):
         print(json.dumps(path.decode(errors="replace")), file=sys.stderr)
     return bool(paths)
