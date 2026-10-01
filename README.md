@@ -33,8 +33,10 @@ the shell.
 ## Install
 
 The supported path is Debian or Ubuntu with `apt` and sudo. macOS is not
-supported. On Linux without `apt-get`, the base packages must already be
-installed.
+supported. On Linux without `apt-get`, install your distribution's equivalents
+of these base packages first: `ca-certificates`, `curl`, `fontconfig`, `git`,
+`libatomic1`, `unzip`, `xz-utils`, and `zsh`. This list comes from the
+[prerequisite script](run_once_before_10-prereqs.sh.tmpl).
 
 Back up any existing managed files, especially `~/.zshrc` and
 `~/.gitconfig`, before installing. `chezmoi init --apply` can replace them
