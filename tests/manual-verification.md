@@ -5,9 +5,9 @@ machine. Do not call it from CI or another script. [`test-zsh.sh`](test-zsh.sh)
 and [`docker-bootstrap.sh`](docker-bootstrap.sh) are the maintained automated
 tests.
 
-The steps below prepare `libatomic1` before mise installs Node. This keeps the
-manual check focused on the applied files, tools, and shell experience. The
-automated Docker test covers the full package bootstrap.
+The repository bootstrap installs the Node runtime library `libatomic1`.
+Do not preinstall it: this check should exercise the same package setup as
+a new machine.
 
 ## Prerequisites
 
@@ -51,25 +51,7 @@ command -v git zsh mise chezmoi || true
 The image should report Ubuntu 24.04, and the four commands should initially be
 absent.
 
-## 2. Refresh APT and install the Node runtime library
-
-Refresh the package index, install the library required by Node, and update the
-dynamic linker cache before applying the dotfiles:
-
-```bash
-sudo apt-get update
-sudo env DEBIAN_FRONTEND=noninteractive \
-  apt-get install -y --no-install-recommends libatomic1
-sudo ldconfig
-
-dpkg -s libatomic1 | grep -F "Status: install ok installed"
-ldconfig -p | grep -F "libatomic.so.1"
-```
-
-The checks should report `install ok installed` and a path for
-`libatomic.so.1`. You do not need to run `apt-get upgrade`.
-
-## 3. Seed the non-interactive chezmoi answers
+## 2. Seed the non-interactive chezmoi answers
 
 ```bash
 mkdir -p "$HOME/.config/chezmoi"
@@ -84,7 +66,7 @@ chmod 600 "$HOME/.config/chezmoi/chezmoi.toml"
 These placeholder values keep the test repeatable and avoid interactive
 prompts. They exist only inside the disposable container.
 
-## 4. Install chezmoi and apply the repository
+## 3. Install chezmoi and apply the repository
 
 ```bash
 mkdir -p "$HOME/.local/bin"
@@ -102,7 +84,7 @@ If the apply still fails, preserve its output. Do not make further manual
 repairs and call the run successful; fix the repository, exit, and restart from
 step 1.
 
-## 5. Confirm chezmoi has nothing left to change
+## 4. Confirm chezmoi has nothing left to change
 
 Both commands should produce no output:
 
@@ -119,7 +101,7 @@ chezmoi --source /dotfiles status
 chezmoi --source /dotfiles diff
 ```
 
-## 6. Check the applied files and toolchain
+## 5. Check the applied files and toolchain
 
 ```bash
 ls -l \
@@ -136,10 +118,10 @@ git config --global user.email
 "$HOME/.local/bin/mise" ls --current
 ```
 
-The Git values should match the placeholders from step 3. Mise should list
+The Git values should match the placeholders from step 2. Mise should list
 every configured tool as installed.
 
-## 7. Try the shell as a user
+## 6. Try the shell as a user
 
 Start a login shell as you would on a new machine:
 
@@ -182,11 +164,14 @@ Exit the login shell to return to Bash:
 exit
 ```
 
-## 8. Run the maintained test suite
+## 7. Run the maintained test suite
 
 Finish with the automated checks:
 
 ```bash
+python3 /dotfiles/tests/test-installers.py
+python3 /dotfiles/tests/test-context7.py
+python3 /dotfiles/tests/test-agent-instructions.py
 /dotfiles/tests/test-zsh.sh "$HOME/.zshrc"
 ```
 

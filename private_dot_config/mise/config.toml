@@ -5,8 +5,7 @@
 # (committed to this repository); bump deliberately with:
 #
 #   cd <chezmoi source>/private_dot_config/mise
-#   mise up         # upgrade tools
-#   mise lock       # refresh lockfile
+#   mise upgrade --local  # upgrade source tools and refresh their lockfile
 #   chezmoi apply
 #
 # Project-specific toolchains belong in each project's own mise.toml and
@@ -59,7 +58,7 @@ yq = "latest"
 
 neovim = "latest"
 
-# Required by the npx-based VS Code MCP servers (context7, firecrawl).
+# Required by Context7 and the npx-based VS Code MCP servers.
 node = "latest"
 
 github-cli = "latest"

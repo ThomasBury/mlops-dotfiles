@@ -29,8 +29,7 @@ So adoption is: fork, swap the repo path, answer two prompts.
    ```bash
    cd ~/.local/share/chezmoi/private_dot_config/mise
    $EDITOR config.toml      # keep only your tools
-   rm mise.lock             # stale until regenerated
-   mise up && mise lock     # reinstall + rewrite the lockfile
+   mise upgrade --local     # refresh source tool versions and its lockfile
    chezmoi apply
    git add -A && git commit -m "chore: trim toolchain to my needs"
    ```
@@ -52,7 +51,7 @@ git add -A && git commit -m "..."
 ```bash
 cd ~/.local/share/chezmoi/private_dot_config/mise
 $EDITOR config.toml      # add or change the tool line
-mise up && mise lock     # install and refresh mise.lock
+mise upgrade --local    # install source tools and refresh their lockfile
 chezmoi apply            # re-installs via the onchange script
 git add -A && git commit -m "feat: add some-tool"
 ```
@@ -60,11 +59,16 @@ git add -A && git commit -m "feat: add some-tool"
 ## Test before you push
 
 ```bash
+python3 tests/test-context7.py
+python3 tests/test-agent-instructions.py
+python3 tests/test-installers.py
 tests/test-zsh.sh                # fast: syntax, isolated load, bindings
 tests/docker-bootstrap.sh        # slow: full fresh-machine E2E in Docker
 ```
 
-CI runs the fast suite on every push and scans history with gitleaks.
+CI runs the three offline Python checks plus Zsh syntax and load checks.
+It runs the Context7 history scanner and Gitleaks for other secret formats.
+Binding and toolchain checks run locally and in the Docker test.
 Run the Docker one before touching the `dot_zshrc` startup order or
 the setup scripts — a workstation and a fresh container load
 differently.

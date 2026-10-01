@@ -54,6 +54,9 @@ VS Code extensions are skipped when `code` is absent, and the font install
 is skipped when `fc-cache` is absent. Ghostty configuration has no effect
 until Ghostty is installed.
 
+If you install VS Code later, run `chezmoi apply` once `code` is on your
+`PATH`. Failed extension installs stop the apply; run it again to retry.
+
 When installation finishes, start the configured shell:
 
 ```bash
@@ -127,7 +130,11 @@ Codex, OpenCode V2, Kilo CLI, the Kilo extension, and VS Code native MCP use
 `~/.local/bin/context7-mcp`. The launcher reads
 `~/.config/context7/api-key` and passes the key through
 `CONTEXT7_API_KEY`. It adds mise's shims to `PATH`, so desktop clients can
-find Node without an interactive shell. The MCP package is pinned to `4.1.1`.
+find Node without an interactive shell, and runs from your home directory
+so workspace settings do not select its runtime. The MCP package is pinned
+to `4.1.1`; its dependency tree is recorded in a committed npm lockfile.
+The setup installs it with `npm ci` under `~/.local/share/context7-mcp`.
+Only the package manifest and lockfile are managed; `node_modules` stays local.
 
 After applying the dotfiles, run this from the repository in your own
 terminal:
@@ -164,14 +171,23 @@ instead of replacing it. The pre-commit hook checks indexed content; pre-push
 checks every outgoing commit, including secrets deleted by a later commit.
 New refs or unknown remote tips conservatively scan all reachable history.
 Matches report filenames only. These checks detect literal Context7 tokens;
-they are local and can be bypassed. Gitleaks CI remains the broader check,
-but runs after upload.
+they are local and can be bypassed. CI runs the same scanner against the full
+checked-out history, alongside Gitleaks for other secret formats. CI runs
+after upload.
+
+If the installed Context7 dependencies are removed, reset just its installer
+and apply again:
+
+```bash
+chezmoi state delete --bucket=entryState --key="$HOME/25-context7-install.sh"
+chezmoi apply
+```
 
 For a live check, restart each client's Context7 connection and ask it to
 resolve the Python library, then query its documentation for reading a UTF-8
 file. Repeat in VS Code launched from the desktop, for both native MCP and
-Kilo. The offline test uses a dummy key and fake `npx`; it does not validate
-account access or the editor UI.
+Kilo. The offline test uses a dummy key and fake npm/server commands. It does
+not validate account access or the editor UI.
 
 ### Shared agent instructions
 
@@ -252,9 +268,9 @@ The install command performs these steps in order:
 5. Writes the managed files into `$HOME`, including the shell and Git
    configuration, mise configuration, VS Code settings, Ghostty font setting,
    Oh My Zsh, and three Zsh plugins.
-6. Runs the three numbered `run_onchange_after` scripts. They install the
-   locked toolchain, VS Code extensions when `code` is available, and
-   JetBrainsMono Nerd Font when `fc-cache` is available.
+6. Runs the four numbered `run_onchange_after` scripts. They install the
+   locked toolchain, locked Context7 dependencies, VS Code extensions when
+   `code` is available, and JetBrainsMono Nerd Font when `fc-cache` is available.
 7. Leaves the files ready for `exec zsh`. To make Zsh your login shell, run
    `chsh -s "$(command -v zsh)"`, then sign out and back in.
 
@@ -332,6 +348,13 @@ chezmoi apply
 # Oh My Zsh and Zsh plugins
 chezmoi apply --refresh-externals
 
+# Context7 (edit the exact package version, then refresh its dependency lock)
+cd "$(chezmoi source-path)/dot_local/share/context7-mcp"
+$EDITOR package.json
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+chezmoi apply
+# commit package.json and package-lock.json together
+
 # VS Code extensions
 $EDITOR "$(chezmoi source-path)/run_onchange_after_30-vscode-extensions.sh.tmpl"
 chezmoi apply
@@ -343,16 +366,17 @@ chezmoi apply
 
 ## Testing
 
-Run the offline agent checks (Python 3.11+, Git, and chezmoi required):
+Run the offline setup checks (Python 3.11+, Git, and chezmoi required):
 
 ```bash
 python3 tests/test-context7.py
 python3 tests/test-agent-instructions.py
+python3 tests/test-installers.py
 ```
 
-CI runs both checks. The instruction check covers fresh and existing targets,
-identical contents, template exclusion, and no changes on a second targeted
-apply. It does not launch an agent or contact a model provider.
+CI runs all three checks. The instruction check covers fresh and existing
+targets, identical contents, template exclusion, and no changes on a second
+targeted apply. It does not launch an agent or contact a model provider.
 
 For shell checks:
 
@@ -361,8 +385,9 @@ tests/test-zsh.sh
 ```
 
 This checks Zsh syntax, loads the configuration in an isolated `ZDOTDIR`,
-verifies key bindings, and checks that every tool resolves through mise. CI
-applies the dotfiles, checks Zsh syntax, and loads an interactive shell on
+verifies key bindings, checks tool paths through mise, and runs Node and npm
+to catch missing runtime libraries. CI applies the dotfiles, checks Zsh
+syntax, and loads an interactive shell on
 every push. It skips the full toolchain install.
 
 For a hands-on check in a clean Ubuntu container, follow the
@@ -398,6 +423,10 @@ longer.
 - **Wrong answer to a prompt.** Fix it with
   `chezmoi edit-config && chezmoi apply`. See
   [Git identity and private files](#git-identity-and-private-files).
+- **Rerun unchanged prerequisites.** `chezmoi apply --force` suppresses
+  prompts but does not reset script history. Run
+  `chezmoi state delete-bucket --bucket=scriptState`, then `chezmoi apply`.
+  This resets all `run_once` scripts.
 
 ## Remove chezmoi
 
@@ -430,9 +459,11 @@ private_dot_config/
 └── Code/User/                        # settings.json, mcp.json.tmpl, Kilo MCP modifier
 run_once_before_10-prereqs.sh.tmpl    # apt base packages (incl. fontconfig) + mise
 run_onchange_after_20-mise-install.sh.tmpl  # re-installs tools on config change
+run_onchange_after_25-context7-install.sh.tmpl  # installs the locked npm dependency tree
 run_onchange_after_30-vscode-extensions.sh.tmpl  # installs the extension list
 run_onchange_after_40-nerd-font.sh.tmpl  # JetBrainsMono Nerd Font, checksummed
 dot_local/bin/executable_context7-mcp # → ~/.local/bin/context7-mcp
+dot_local/share/context7-mcp/         # managed package.json and package-lock.json
 dot_codex/AGENTS.md.tmpl              # → ~/.codex/AGENTS.md
 dot_codex/modify_private_config.toml  # updates only Codex Context7 settings
 scripts/set-context7-key.py           # hidden prompt; writes only outside the repo
@@ -440,6 +471,7 @@ scripts/check-context7-secrets.py     # local Git hook check
 .githooks/{pre-commit,pre-push}       # enabled with core.hooksPath
 tests/test-agent-instructions.py      # offline shared instruction delivery checks
 tests/test-context7.py                # offline launcher/config/hook checks
+tests/test-installers.py              # offline prerequisite/editor retry checks
 tests/test-zsh.sh                     # local shell/toolchain test suite
 tests/docker-bootstrap.sh             # local Docker fresh-machine E2E (not CI)
 ```
