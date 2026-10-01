@@ -29,9 +29,12 @@ mkdir -p "$HOME/.local/bin"
 curl -fsLS https://get.chezmoi.io | sh -s -- -b "$HOME/.local/bin"
 export PATH="$HOME/.local/bin:$PATH"
 
-log "applying dotfiles from /dotfiles (full bootstrap: apt, mise, 26 tools)"
+log "applying dotfiles from /dotfiles (full bootstrap: apt, mise, tools)"
 # GITHUB_TOKEN avoids unauthenticated GitHub API rate limits (60 req/h).
 "$HOME/.local/bin/chezmoi" init --source /dotfiles --apply
 
 log "running full local test suite"
+python3 /dotfiles/tests/test-installers.py
+python3 /dotfiles/tests/test-context7.py
+python3 /dotfiles/tests/test-agent-instructions.py
 exec /dotfiles/tests/test-zsh.sh

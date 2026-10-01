@@ -152,6 +152,8 @@ TOOLS=(
     yq
 
     nvim
+    node
+    npm
 
     chezmoi
     gh
@@ -200,10 +202,12 @@ ZDOTDIR="$TMPDIR_ZSH" zsh -i -c '
     if ((tools_missing)) || ((not_mise)); then
         exit 1
     fi
+    node --version >/dev/null || exit 1
+    npm --version >/dev/null || exit 1
     exit 0
 ' test-tools "${TOOLS[@]}" || fail "toolchain incomplete or shadowed (run: mise install)"
 
-pass "all ${#TOOLS[@]} tools available and resolving through mise"
+pass "all ${#TOOLS[@]} commands resolve through mise; Node and npm run"
 
 
 # =============================================================================

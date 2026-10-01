@@ -6,6 +6,7 @@
 # Re-runs automatically whenever this file's content changes, because chezmoi
 # hashes the rendered script. Editing the EXTENSIONS list below is therefore
 # enough to roll the change out with `chezmoi apply`.
+# code CLI at apply time: {{ lookPath "code" }}
 #
 # Idempotent: extensions already installed are left alone by the CLI.
 # =============================================================================
@@ -86,16 +87,25 @@ EXTENSIONS=(
 
 log "Installing ${#EXTENSIONS[@]} VS Code extensions"
 
+failed=0
 for extension in "${EXTENSIONS[@]}"; do
-    if code --install-extension "$extension" >/dev/null 2>&1; then
+    if code --install-extension "$extension"; then
         echo "  installed $extension"
     else
         echo "  FAILED to install $extension" >&2
+        failed=1
     fi
 done
 
+if ((failed)); then
+    echo "Extension installation failed; run chezmoi apply again to retry." >&2
+    exit 1
+fi
+
 # Retire the extension superseded by ms-azuretools.vscode-containers.
-if code --list-extensions | grep -qx 'ms-azuretools.vscode-docker'; then
+installed="$(code --list-extensions)"
+if grep -qx 'ms-azuretools.vscode-docker' <<< "$installed" && \
+   grep -qx 'ms-azuretools.vscode-containers' <<< "$installed"; then
     log "Removing superseded ms-azuretools.vscode-docker"
-    code --uninstall-extension ms-azuretools.vscode-docker >/dev/null 2>&1 || true
+    code --uninstall-extension ms-azuretools.vscode-docker
 fi

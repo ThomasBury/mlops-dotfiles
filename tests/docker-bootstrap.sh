@@ -7,7 +7,7 @@
 #
 # Simulates a fresh Ubuntu 24.04 machine: minimal image (no zsh, no git, no
 # mise), then the dotfiles bootstrap installs everything and tests/test-zsh.sh
-# verifies the result. The 26-tool install is heavy; that is exactly why this
+# verifies the result. The full tool install is heavy; that is exactly why this
 # is not part of GitHub Actions CI.
 #
 # Requirements: docker, network. GITHUB_TOKEN (or `gh auth token`) avoids
@@ -43,7 +43,7 @@ if ((FRESH)); then
 fi
 
 printf '\033[1;34m==>\033[0m running bootstrap + tests%s\n' \
-    "$([[ $FRESH ]] && printf ' (cold install, 10-20+ min first time)' || printf '')"
+    "$([[ $FRESH == 1 ]] && printf ' (cold install, 10-20+ min first time)' || printf '')"
 
 # Repo is mounted read-only: the container must not mutate the working tree.
 # Volumes persist the mise download cache and installed tools between runs.

@@ -3,8 +3,8 @@
 # =============================================================================
 # run_once_before: OS prerequisites + mise binary
 #
-# Runs once per machine before dotfiles are applied. Idempotent; safe to
-# re-run manually with `chezmoi apply --force`.
+# Runs once per script version before dotfiles are applied. To rerun unchanged
+# prerequisites, reset chezmoi's scriptState bucket before applying.
 # =============================================================================
 
 set -Eeuo pipefail
@@ -30,6 +30,7 @@ if command -v apt-get >/dev/null 2>&1; then
         curl
         fontconfig
         git
+        libatomic1
         unzip
         xz-utils
         zsh

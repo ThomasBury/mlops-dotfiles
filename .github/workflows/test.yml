@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 # CI validates configuration rendering and shell loading only.
-# The toolchain install (26 CLIs) is deliberately skipped here; use
+# The full toolchain install is deliberately skipped here; use
 # a fresh machine or container to verify the full bootstrap.
 jobs:
   apply:
@@ -22,7 +22,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y zsh
 
       - name: Install chezmoi
-        run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
 
       - name: Seed non-interactive identity
         run: |
@@ -35,6 +37,9 @@ jobs:
 
       - name: Test shared agent instructions
         run: python3 tests/test-agent-instructions.py
+
+      - name: Test bootstrap and editor installers
+        run: python3 tests/test-installers.py
 
       - name: Apply dotfiles
         run: |
