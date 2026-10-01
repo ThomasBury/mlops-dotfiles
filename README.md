@@ -17,6 +17,8 @@ the shell.
 - [Details](#details)
   - [Git identity and private files](#git-identity-and-private-files)
   - [Context7 setup](#context7-setup)
+  - [Ghostty theme](#ghostty-theme)
+  - [Codex Ponytail plugin](#codex-ponytail-plugin)
   - [Shared agent instructions](#shared-agent-instructions)
   - [How installation works](#how-installation-works)
   - [How managed files work](#how-managed-files-work)
@@ -51,11 +53,17 @@ your password while `apt` installs base packages. A cold install takes
 10–20 minutes or longer because mise downloads the full toolchain.
 
 VS Code extensions are skipped when `code` is absent, and the font install
-is skipped when `fc-cache` is absent. Ghostty configuration has no effect
-until Ghostty is installed.
+is skipped when `fc-cache` is absent. Install
+[Ghostty](https://ghostty.org/docs/install/binary) and
+[Codex CLI](https://developers.openai.com/codex/cli/) separately; both are
+prerequisites for their integrations. Ponytail provisioning is skipped when
+`codex` is absent or in CI.
 
 If you install VS Code later, run `chezmoi apply` once `code` is on your
 `PATH`. Failed extension installs stop the apply; run it again to retry.
+The same applies when you install Codex later: put `codex` on your `PATH`
+and run `chezmoi apply`. Failed Ponytail installs stop the apply and retry
+on the next run.
 
 When installation finishes, start the configured shell:
 
@@ -74,9 +82,9 @@ what to change.
 | Prompt | Starship | Default prompt with optional local configuration |
 | Toolchain | mise | Locked command-line tool versions |
 | Editor | chezmoi and `code` | VS Code settings, MCP definitions, flags, and extensions |
-| Terminal | chezmoi | Ghostty font setting |
+| Terminal | chezmoi | Ghostty font and Gruvbox Material Dark theme |
 | Font | install script | Checksum-verified JetBrainsMono Nerd Font |
-| Assistants | chezmoi | Context7 plus shared instructions for Codex, OpenCode, and Kilo; VS Code native MCP |
+| Assistants | chezmoi | Context7, shared instructions and skills; Codex Ponytail plugin with hooks; VS Code native MCP |
 | Identity | chezmoi prompt | Local Git name and email |
 
 ## Daily use
@@ -153,9 +161,11 @@ To rotate the key, run the same command, then restart Context7 in each client
 [Context7 dashboard](https://context7.com/dashboard); deleting a local copy
 does not revoke it.
 
-The Codex, OpenCode, and Kilo `modify_` templates update only their Context7
-entries and preserve other settings. They accept JSONC where supported;
-rendering normalizes formatting and drops comments. VS Code's native MCP file
+The OpenCode and Kilo `modify_` templates update only their Context7 entries.
+The Codex modifier also disables duplicate shared Ponytail skills after the
+plugin is installed and enabled. All preserve unrelated settings and accept
+JSONC where supported; rendering normalizes formatting and drops comments.
+VS Code's native MCP file
 is managed in full. Project-level MCP settings can override these global
 ones.
 
@@ -188,6 +198,52 @@ resolve the Python library, then query its documentation for reading a UTF-8
 file. Repeat in VS Code launched from the desktop, for both native MCP and
 Kilo. The offline test uses a dummy key and fake npm/server commands. It does
 not validate account access or the editor UI.
+
+### Ghostty theme
+
+The managed config selects `Gruvbox Material Dark` and the installed
+JetBrainsMono Nerd Font. After installing Ghostty separately, check that the
+theme is available:
+
+```bash
+ghostty +list-themes
+```
+
+Find `Gruvbox Material Dark`, then reload Ghostty's configuration or reopen
+the terminal after `chezmoi apply`. Ghostty
+[bundles its themes](https://ghostty.org/docs/features/theme), so Gogh is
+unnecessary.
+
+### Codex Ponytail plugin
+
+After toolchain setup, the installer uses Codex's native commands to register
+`DietrichGebert/ponytail` and install `ponytail@ponytail`. Existing enabled
+installations are left alone. Node comes from mise. Once the plugin is
+installed and enabled, the Codex modifier merges six path-specific disable
+entries for `~/.agents/skills/ponytail*`. Those shared files remain available
+to OpenCode and other assistants; unrelated Codex settings and skill rules
+are preserved.
+
+On a fresh machine, open Codex, use `/hooks` to review and trust the Ponytail
+hooks, then start a new session. Installing a plugin does not grant hook
+trust; [Codex requires explicit review](https://developers.openai.com/plugins/build/plugins#bundled-mcp-servers-and-lifecycle-hooks).
+Confirm the new session lists one Ponytail skill set and automatically starts
+Ponytail mode. Keep hook approvals, plugin caches and session state local;
+this repository does not copy or approve them.
+
+Use Codex's native update mechanism when you want a plugin update:
+
+```bash
+codex plugin marketplace upgrade ponytail
+```
+
+Review changed hooks through `/hooks` again when Codex requests it. If you
+remove the installed cache, reset just the provisioning script and reapply:
+
+```bash
+chezmoi state delete --bucket=entryState --key="$HOME/26-codex-ponytail.sh"
+chezmoi apply
+```
 
 ### Shared agent instructions
 
@@ -266,15 +322,16 @@ The install command performs these steps in order:
 4. Renders and runs `run_once_before_10-prereqs.sh.tmpl`, which installs the
    base `apt` packages and mise.
 5. Writes the managed files into `$HOME`, including the shell and Git
-   configuration, mise configuration, VS Code settings, Ghostty font setting,
+   configuration, mise configuration, VS Code settings, Ghostty font and theme,
    Oh My Zsh, and three Zsh plugins.
-6. Runs the four numbered `run_onchange_after` scripts. They install the
-   locked toolchain, locked Context7 dependencies, VS Code extensions when
-   `code` is available, and JetBrainsMono Nerd Font when `fc-cache` is available.
+6. Runs the five numbered `run_onchange_after` scripts. They install the
+   locked toolchain, locked Context7 dependencies, Ponytail when `codex` is
+   available, VS Code extensions when `code` is available, and JetBrainsMono
+   Nerd Font when `fc-cache` is available.
 7. Leaves the files ready for `exec zsh`. To make Zsh your login shell, run
    `chsh -s "$(command -v zsh)"`, then sign out and back in.
 
-The bootstrap configures VS Code and Ghostty but does not install either app.
+The bootstrap configures VS Code, Ghostty and Codex but does not install them.
 
 ### How managed files work
 
@@ -377,6 +434,10 @@ python3 tests/test-installers.py
 CI runs all three checks. The instruction check covers fresh and existing
 targets, identical contents, template exclusion, and no changes on a second
 targeted apply. It does not launch an agent or contact a model provider.
+The installer check covers missing Codex, CI skips, first and existing plugin
+installs, failure and retry, duplicate-skill suppression, preserved local
+settings and repeated applies. Hook trust and activation in a new Codex
+session require the [manual check](#codex-ponytail-plugin).
 
 For shell checks:
 
@@ -460,18 +521,19 @@ private_dot_config/
 run_once_before_10-prereqs.sh.tmpl    # apt base packages (incl. fontconfig) + mise
 run_onchange_after_20-mise-install.sh.tmpl  # re-installs tools on config change
 run_onchange_after_25-context7-install.sh.tmpl  # installs the locked npm dependency tree
+run_onchange_after_26-codex-ponytail.sh.tmpl  # provisions the native Codex plugin
 run_onchange_after_30-vscode-extensions.sh.tmpl  # installs the extension list
 run_onchange_after_40-nerd-font.sh.tmpl  # JetBrainsMono Nerd Font, checksummed
 dot_local/bin/executable_context7-mcp # → ~/.local/bin/context7-mcp
 dot_local/share/context7-mcp/         # managed package.json and package-lock.json
 dot_codex/AGENTS.md.tmpl              # → ~/.codex/AGENTS.md
-dot_codex/modify_private_config.toml  # updates only Codex Context7 settings
+dot_codex/modify_private_config.toml  # Context7 and duplicate Ponytail skill suppression
 scripts/set-context7-key.py           # hidden prompt; writes only outside the repo
 scripts/check-context7-secrets.py     # local Git hook check
 .githooks/{pre-commit,pre-push}       # enabled with core.hooksPath
 tests/test-agent-instructions.py      # offline shared instruction delivery checks
 tests/test-context7.py                # offline launcher/config/hook checks
-tests/test-installers.py              # offline prerequisite/editor retry checks
+tests/test-installers.py              # offline prerequisite/editor/plugin retry checks
 tests/test-zsh.sh                     # local shell/toolchain test suite
 tests/docker-bootstrap.sh             # local Docker fresh-machine E2E (not CI)
 ```
