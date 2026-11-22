@@ -1,29 +1,3 @@
 {{- /* chezmoi:modify-template */ -}}
 {{- $config := .chezmoi.stdin | fromToml -}}
-{{- $plugin := dig "plugins" "ponytail@ponytail" (dict) $config -}}
-{{- $installed := glob (joinPath .chezmoi.homeDir ".codex/plugins/cache/ponytail/ponytail/*/.codex-plugin/plugin.json") -}}
-{{- if and $installed $plugin (dig "enabled" true $plugin) -}}
-  {{- $paths := list -}}
-  {{- range list "ponytail" "ponytail-audit" "ponytail-debt" "ponytail-gain" "ponytail-help" "ponytail-review" -}}
-    {{- $paths = append $paths (joinPath $.chezmoi.homeDir ".agents/skills" . "SKILL.md") -}}
-  {{- end -}}
-  {{- $entries := list -}}
-  {{- $shared := dict -}}
-  {{- range dig "skills" "config" (list) $config -}}
-    {{- if has (get . "path") $paths -}}
-      {{- $_ := set . "enabled" false -}}
-      {{- $_ := set $shared (get . "path") . -}}
-    {{- else -}}
-      {{- $entries = append $entries . -}}
-    {{- end -}}
-  {{- end -}}
-  {{- range $paths -}}
-    {{- if hasKey $shared . -}}
-      {{- $entries = append $entries (get $shared .) -}}
-    {{- else -}}
-      {{- $entries = append $entries (dict "path" . "enabled" false) -}}
-    {{- end -}}
-  {{- end -}}
-  {{- $config = setValueAtPath "skills.config" $entries $config -}}
-{{- end -}}
 {{ $config | setValueAtPath "mcp_servers.context7" (dict "command" (joinPath .chezmoi.homeDir ".local/bin/context7-mcp")) | toToml }}

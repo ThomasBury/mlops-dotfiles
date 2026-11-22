@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline checks: python3 tests/test-agent-instructions.py (requires chezmoi)."""
+"""Offline delivery checks for agent instructions and workflows (requires chezmoi)."""
 import os
 from pathlib import Path
 import shutil
@@ -8,6 +8,14 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = (".codex/AGENTS.md", ".config/opencode/AGENTS.md", ".config/kilo/AGENTS.md")
+WORKFLOWS = ("oss-pr", "improve-prompt", "improve-plan", "improve-package-prompt", "review-project")
+WORKFLOW_SOURCES = {
+    **{f".agents/skills/{name}/SKILL.md": ROOT / f"dot_agents/skills/{name}/SKILL.md"
+       for name in WORKFLOWS},
+    **{f".config/opencode/commands/{name}.md": ROOT / f"private_dot_config/opencode/commands/{name}.md"
+       for name in WORKFLOWS},
+}
+UNRELATED = (".zshrc", ".agents/skills/local-only/SKILL.md", ".config/opencode/commands/local-only.md")
 shared = (ROOT / ".chezmoitemplates/AGENTS.md").read_text()
 chezmoi = shutil.which("chezmoi")
 assert chezmoi, "chezmoi is required"
@@ -50,7 +58,7 @@ for existing in (False, True):
             assert run("cat", str(target)) == shared
 
         managed = run("managed", "--path-style", "relative").splitlines()
-        assert set(TARGETS) <= set(managed)
+        assert set(TARGETS) | WORKFLOW_SOURCES.keys() <= set(managed)
         assert "AGENTS.md" not in managed
         assert not any("chezmoitemplates" in name for name in managed)
 
@@ -65,4 +73,31 @@ for existing in (False, True):
         assert [target.stat().st_mtime_ns for target in targets] == before
         assert not run("diff", "--exclude", "scripts", *paths)
 
-print("PASS: shared instructions, absent/existing targets, partial exclusion, targeted apply idempotence")
+        for name in UNRELATED:
+            target = home / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b"Unrelated local file\n")
+
+        workflow_targets = [home / name for name in WORKFLOW_SOURCES]
+        for target in workflow_targets:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if existing:
+                target.write_bytes(b"Previous local workflow\n")
+
+        workflow_args = ["--exclude", "scripts", *map(str, workflow_targets)]
+        assert run("diff", *workflow_args)
+        run("apply", "--force", *workflow_args)
+        for target, source in zip(workflow_targets, WORKFLOW_SOURCES.values()):
+            assert target.read_bytes() == source.read_bytes(), target
+
+        assert {p.relative_to(home).as_posix() for p in home.rglob("*") if p.is_file()} == (
+            set(TARGETS) | set(UNRELATED) | WORKFLOW_SOURCES.keys()
+        )
+        before = [target.stat().st_mtime_ns for target in workflow_targets]
+        run("apply", *workflow_args)
+        assert not run("diff", *workflow_args)
+        assert [target.stat().st_mtime_ns for target in workflow_targets] == before
+        assert all((home / name).read_bytes() == b"Unrelated local file\n" for name in UNRELATED)
+        assert all(target.read_text() == shared for target in targets)
+
+print("PASS: shared instructions and workflows, absent/existing targets, preservation and repeat apply")
