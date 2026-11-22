@@ -18,8 +18,8 @@ the shell.
   - [Git identity and private files](#git-identity-and-private-files)
   - [Context7 setup](#context7-setup)
   - [Ghostty theme](#ghostty-theme)
-  - [Codex Ponytail plugin](#codex-ponytail-plugin)
   - [Shared agent instructions](#shared-agent-instructions)
+  - [Shared agent workflows](#shared-agent-workflows)
   - [How installation works](#how-installation-works)
   - [How managed files work](#how-managed-files-work)
   - [Updating tools](#updating-tools)
@@ -58,14 +58,10 @@ VS Code extensions are skipped when `code` is absent, and the font install
 is skipped when `fc-cache` is absent. Install
 [Ghostty](https://ghostty.org/docs/install/binary) and
 [Codex CLI](https://developers.openai.com/codex/cli/) separately; both are
-prerequisites for their integrations. Ponytail provisioning is skipped when
-`codex` is absent or in CI.
+prerequisites for their integrations.
 
 If you install VS Code later, run `chezmoi apply` once `code` is on your
 `PATH`. Failed extension installs stop the apply; run it again to retry.
-The same applies when you install Codex later: put `codex` on your `PATH`
-and run `chezmoi apply`. Failed Ponytail installs stop the apply and retry
-on the next run.
 
 When installation finishes, start the configured shell:
 
@@ -86,7 +82,7 @@ what to change.
 | Editor | chezmoi and `code` | VS Code settings, MCP definitions, flags, and extensions |
 | Terminal | chezmoi | Ghostty font and Gruvbox Material Dark theme |
 | Font | install script | Checksum-verified JetBrainsMono Nerd Font |
-| Assistants | chezmoi | Context7, shared instructions and skills; Codex Ponytail plugin with hooks; VS Code native MCP |
+| Assistants | chezmoi | Context7, shared instructions and skills, and VS Code native MCP |
 | Identity | chezmoi prompt | Local Git name and email |
 
 ## Daily use
@@ -163,10 +159,9 @@ To rotate the key, run the same command, then restart Context7 in each client
 [Context7 dashboard](https://context7.com/dashboard); deleting a local copy
 does not revoke it.
 
-The OpenCode and Kilo `modify_` templates update only their Context7 entries.
-The Codex modifier also disables duplicate shared Ponytail skills after the
-plugin is installed and enabled. All preserve unrelated settings and accept
-JSONC where supported; rendering normalizes formatting and drops comments.
+The OpenCode, Kilo and Codex `modify_` templates update their Context7 entries.
+They preserve unrelated settings. Rendering accepts JSONC where supported,
+normalizes formatting and drops comments.
 VS Code's native MCP file
 is managed in full. Project-level MCP settings can override these global
 ones.
@@ -216,37 +211,6 @@ the terminal after `chezmoi apply`. Ghostty
 [bundles its themes](https://ghostty.org/docs/features/theme), so Gogh is
 unnecessary.
 
-### Codex Ponytail plugin
-
-After toolchain setup, the installer uses Codex's native commands to register
-`DietrichGebert/ponytail` and install `ponytail@ponytail`. Existing enabled
-installations are left alone. Node comes from mise. Once the plugin is
-installed and enabled, the Codex modifier merges six path-specific disable
-entries for `~/.agents/skills/ponytail*`. Those shared files remain available
-to OpenCode and other assistants; unrelated Codex settings and skill rules
-are preserved.
-
-On a fresh machine, open Codex, use `/hooks` to review and trust the Ponytail
-hooks, then start a new session. Installing a plugin does not grant hook
-trust; [Codex requires explicit review](https://developers.openai.com/plugins/build/plugins#bundled-mcp-servers-and-lifecycle-hooks).
-Confirm the new session lists one Ponytail skill set and automatically starts
-Ponytail mode. Keep hook approvals, plugin caches and session state local;
-this repository does not copy or approve them.
-
-Use Codex's native update mechanism when you want a plugin update:
-
-```bash
-codex plugin marketplace upgrade ponytail
-```
-
-Review changed hooks through `/hooks` again when Codex requests it. If you
-remove the installed cache, reset just the provisioning script and reapply:
-
-```bash
-chezmoi state delete --bucket=entryState --key="$HOME/26-codex-ponytail.sh"
-chezmoi apply
-```
-
 ### Shared agent instructions
 
 Edit [.chezmoitemplates/AGENTS.md](.chezmoitemplates/AGENTS.md) to change the
@@ -268,8 +232,7 @@ Global instructions describe reusable preferences. Keep repository commands,
 architecture, and exceptions in that project's `AGENTS.md`. The shared text
 explicitly defers to project conventions because agents load instructions in
 different orders. Stack defaults are conditional; they do not request tool
-installation or migration. Existing Ponytail skills and commands remain
-separate. CodeRabbit and unmanaged agents are outside this setup.
+installation or migration. CodeRabbit and unmanaged agents are outside this setup.
 
 To activate only these instructions, run the following from this repository.
 First, back up existing destinations locally and preview the changes:
@@ -314,6 +277,57 @@ The offline check verifies delivery and repeatable applies; this manual smoke
 check verifies that each installed client loads the instructions and respects
 project exceptions. This setup uses the standard configuration locations.
 
+### Shared agent workflows
+
+Edit the [shared skills](dot_agents/skills/) in one place. Codex and Kilo
+discover them in `~/.agents/skills/`. The [OpenCode wrappers](private_dot_config/opencode/commands/)
+load the same skills from the current conversation and pass along any arguments.
+
+| Workflow | Codex example | OpenCode and Kilo example |
+| --- | --- | --- |
+| Deliver an OSS PR | `$oss-pr` | `/oss-pr` |
+| Release after maintainer merge | `$oss-pr release 42` | `/oss-pr release 42` |
+| Improve a task prompt | `$improve-prompt Review the import errors` | `/improve-prompt Review the import errors` |
+| Improve the plan in this conversation | `$improve-plan` | `/improve-plan` |
+| Improve a package request | `$improve-package-prompt Clarify the export API` | `/improve-package-prompt Clarify the export API` |
+| Review a project | `$review-project Focus on installation` | `/review-project Focus on installation` |
+
+To activate only these workflows, run the following in Bash from this repository.
+Back up any existing copies and preview the ten targets.
+
+```bash
+workflow_source="$PWD"
+workflow_backup="$(mktemp -d "$HOME/agent-workflows-backup.XXXXXX")"
+workflow_targets=()
+for name in oss-pr improve-prompt improve-plan improve-package-prompt review-project; do
+    workflow_targets+=("$HOME/.agents/skills/$name/SKILL.md")
+    workflow_targets+=("$HOME/.config/opencode/commands/$name.md")
+done
+for target in "${workflow_targets[@]}"; do
+    if [ -e "$target" ] || [ -L "$target" ]; then
+        backup="$workflow_backup/${target#"$HOME/"}"
+        mkdir -p "$(dirname "$backup")" && cp -pP "$target" "$backup"
+    fi
+done
+echo "Workflow backups: $workflow_backup"
+chezmoi --source "$workflow_source" --refresh-externals=never --no-pager diff \
+    --exclude scripts "${workflow_targets[@]}"
+```
+
+After confirming the backups and reviewing the preview, apply the same files
+in the same shell. The final diff should be empty. Start fresh agent sessions
+to pick up the workflows.
+
+```bash
+for target in "${workflow_targets[@]}"; do
+    mkdir -p "$(dirname "$target")"
+done
+chezmoi --source "$workflow_source" --refresh-externals=never apply \
+    --exclude scripts "${workflow_targets[@]}"
+chezmoi --source "$workflow_source" --refresh-externals=never --no-pager diff \
+    --exclude scripts "${workflow_targets[@]}"
+```
+
 ### How installation works
 
 The install command performs these steps in order:
@@ -326,10 +340,9 @@ The install command performs these steps in order:
 5. Writes the managed files into `$HOME`, including the shell and Git
    configuration, mise configuration, VS Code settings, Ghostty font and theme,
    Oh My Zsh, and three Zsh plugins.
-6. Runs the five numbered `run_onchange_after` scripts. They install the
-   locked toolchain, locked Context7 dependencies, Ponytail when `codex` is
-   available, VS Code extensions when `code` is available, and JetBrainsMono
-   Nerd Font when `fc-cache` is available.
+6. Runs four numbered `run_onchange_after` scripts. They install the locked
+   toolchain, locked Context7 dependencies, VS Code extensions when `code` is
+   available, and JetBrainsMono Nerd Font when `fc-cache` is available.
 7. Leaves the files ready for `exec zsh`. To make Zsh your login shell, run
    `chsh -s "$(command -v zsh)"`, then sign out and back in.
 
@@ -433,13 +446,11 @@ python3 tests/test-agent-instructions.py
 python3 tests/test-installers.py
 ```
 
-CI runs all three checks. The instruction check covers fresh and existing
-targets, identical contents, template exclusion, and no changes on a second
-targeted apply. It does not launch an agent or contact a model provider.
-The installer check covers missing Codex, CI skips, first and existing plugin
-installs, failure and retry, duplicate-skill suppression, preserved local
-settings and repeated applies. Hook trust and activation in a new Codex
-session require the [manual check](#codex-ponytail-plugin).
+CI runs all three checks. The agent delivery check covers fresh and existing
+instruction and workflow files, unrelated file preservation, template
+exclusion, and an empty diff after a second targeted apply.
+The installer check covers prerequisites, optional editor detection,
+installation failure and retry, and repeated applies.
 
 For shell checks:
 
@@ -512,30 +523,31 @@ Font. Delete those by hand only if you want a clean slate.
 .chezmoitemplates/AGENTS.md           # shared engineering instructions
 .chezmoiexternal.toml                 # Oh My Zsh + plugins (refreshPeriod = 0)
 .chezmoiignore                        # repo docs + ~/.aws, ~/.azure excluded
+dot_agents/skills/                    # shared agent workflows
 dot_zshrc                             # → ~/.zshrc
 dot_gitconfig.tmpl                    # → ~/.gitconfig (identity from .data)
 dot_vscode/argv.json.tmpl             # → ~/.vscode/argv.json
 private_dot_config/
 ├── mise/{config.toml,mise.lock}      # → ~/.config/mise/
 ├── {opencode,kilo}/AGENTS.md.tmpl    # global instruction wrappers
+├── opencode/commands/               # wrappers for the shared workflows
 ├── ghostty/config                    # → ~/.config/ghostty/config
 └── Code/User/                        # settings.json, mcp.json.tmpl, Kilo MCP modifier
 run_once_before_10-prereqs.sh.tmpl    # apt base packages (incl. fontconfig) + mise
 run_onchange_after_20-mise-install.sh.tmpl  # re-installs tools on config change
 run_onchange_after_25-context7-install.sh.tmpl  # installs the locked npm dependency tree
-run_onchange_after_26-codex-ponytail.sh.tmpl  # provisions the native Codex plugin
 run_onchange_after_30-vscode-extensions.sh.tmpl  # installs the extension list
 run_onchange_after_40-nerd-font.sh.tmpl  # JetBrainsMono Nerd Font, checksummed
 dot_local/bin/executable_context7-mcp # → ~/.local/bin/context7-mcp
 dot_local/share/context7-mcp/         # managed package.json and package-lock.json
 dot_codex/AGENTS.md.tmpl              # → ~/.codex/AGENTS.md
-dot_codex/modify_private_config.toml  # Context7 and duplicate Ponytail skill suppression
+dot_codex/modify_private_config.toml  # Context7 config modifier
 scripts/set-context7-key.py           # hidden prompt; writes only outside the repo
 scripts/check-context7-secrets.py     # local Git hook check
 .githooks/{pre-commit,pre-push}       # enabled with core.hooksPath
-tests/test-agent-instructions.py      # offline shared instruction delivery checks
+tests/test-agent-instructions.py      # offline instruction and workflow delivery checks
 tests/test-context7.py                # offline launcher/config/hook checks
-tests/test-installers.py              # offline prerequisite/editor/plugin retry checks
+tests/test-installers.py              # offline prerequisite and editor installer checks
 tests/test-zsh.sh                     # local shell/toolchain test suite
 tests/docker-bootstrap.sh             # local Docker fresh-machine E2E (not CI)
 ```
