@@ -36,15 +36,7 @@ So adoption is: fork, swap the repo path, answer two prompts.
 
 ## Make a change
 
-Edit the source, never the rendered copy — a rendered file is
-overwritten on the next `chezmoi apply`:
-
-```bash
-chezmoi edit ~/.zshrc    # opens dot_zshrc in the source dir
-chezmoi diff             # what would change
-chezmoi apply            # render into $HOME
-git add -A && git commit -m "..."
-```
+Use the README workflow for [making a shared change](README.md#make-a-shared-change).
 
 ## Add or bump a tool
 

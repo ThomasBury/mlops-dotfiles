@@ -14,6 +14,8 @@ the shell.
 - [Install](#install)
 - [What you get](#what-you-get)
 - [Daily use](#daily-use)
+  - [Make a shared change](#make-a-shared-change)
+  - [Refresh another machine](#refresh-another-machine)
 - [Details](#details)
   - [Git identity and private files](#git-identity-and-private-files)
   - [Context7 setup](#context7-setup)
@@ -87,12 +89,46 @@ what to change.
 
 ## Daily use
 
+Chezmoi reads managed files from your local checkout, including uncommitted edits.
+Commit and push the source changes when you want to share them with another
+machine.
+
+### Make a shared change
+
+For a Zsh change, open the source and check the edit before applying it.
+
 ```bash
-chezmoi edit ~/.zshrc        # edit the source of a managed file
-chezmoi apply                # render source state into $HOME
-chezmoi diff                 # preview what would change
-chezmoi update               # pull with autostash and rebase, then apply
+cd "$(chezmoi source-path)"
+chezmoi edit ~/.zshrc
+zsh -n dot_zshrc
+git diff -- dot_zshrc
+chezmoi diff ~/.zshrc
 ```
+
+`git diff` shows your source edits. `chezmoi diff` shows what would change in
+your home directory. If the preview looks right, apply just the file you edited.
+
+```bash
+chezmoi apply ~/.zshrc
+```
+
+Open a fresh Zsh session and check the behavior. Stage the source file with
+`git add -- dot_zshrc` and commit the change.
+
+### Refresh another machine
+
+On a machine with a clean checkout, pull the latest commits and preview the
+update.
+
+```bash
+chezmoi update --apply=false
+chezmoi status
+chezmoi diff
+```
+
+In `chezmoi status`, `R` marks a setup script that a full apply would run. After
+reviewing the output, run `chezmoi apply`. Plain `chezmoi update` pulls and
+applies in one step.
 
 ## Details
 
@@ -365,9 +401,15 @@ source dir (default ~/.local/share/chezmoi)      $HOME (rendered copy)
   private_dot_config/…         ── chezmoi apply ──▸  ~/.config/…
 ```
 
-A clone plus `chezmoi init` and `chezmoi apply` can rebuild every managed
-file. If you edit a rendered file directly, the next apply overwrites your
-change. Edit the source instead.
+A clone plus `chezmoi init` and `chezmoi apply` can rebuild every managed file.
+For a file managed in full, such as `~/.zshrc`, edit the source. Applying it
+can overwrite edits made to the installed file.
+
+A `modify_` template reads the installed file and updates selected settings.
+The Codex configuration template defaults to **Approve for me** with the
+`workspace-write` sandbox. It fills in missing approval and sandbox settings,
+respects existing selections including named permission profiles, and removes
+the obsolete `personality = "pragmatic"` setting. Project trust stays local.
 
 Starship uses its defaults until you add `~/.config/starship.toml`, which it
 reads automatically.
@@ -541,7 +583,7 @@ run_onchange_after_40-nerd-font.sh.tmpl  # JetBrainsMono Nerd Font, checksummed
 dot_local/bin/executable_context7-mcp # → ~/.local/bin/context7-mcp
 dot_local/share/context7-mcp/         # managed package.json and package-lock.json
 dot_codex/AGENTS.md.tmpl              # → ~/.codex/AGENTS.md
-dot_codex/modify_private_config.toml  # Context7 config modifier
+dot_codex/modify_private_config.toml  # Codex approval defaults and Context7
 scripts/set-context7-key.py           # hidden prompt; writes only outside the repo
 scripts/check-context7-secrets.py     # local Git hook check
 .githooks/{pre-commit,pre-push}       # enabled with core.hooksPath
