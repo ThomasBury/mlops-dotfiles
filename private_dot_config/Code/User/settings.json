@@ -1,5 +1,4 @@
 {
-    "git.confirmSync": false,
     "workbench.colorTheme": "Andromeda",
     "[python]": {
         "editor.formatOnType": true,
@@ -12,20 +11,13 @@
     "notebook.output.scrolling": true,
     "notebook.output.textLineLimit": 50,
     "diffEditor.codeLens": true,
-    "kilo-code.allowedCommands": [
-        "npm test",
-        "npm install",
-        "tsc",
-        "git log",
-        "git diff",
-        "git show"
-    ],
     "marimo.marimoPath": "uv run marimo",
     "chat.mcp.discovery.enabled": {
-        "claude-desktop": true,
-        "windsurf": true,
-        "cursor-global": true,
-        "cursor-workspace": true
+        "claude-desktop": false,
+        "windsurf": false,
+        "cursor-global": false,
+        "cursor-workspace": false,
+        "copilot": false
     },
     "jupyter.interactiveWindow.creationMode": "perFile",
     "docker.extension.enableComposeLanguageServer": false,
@@ -37,13 +29,5 @@
         "kilo-code.new.agentManager.nextTerminal"
     ],
     "kilo-code.new.agentWorkStyle": "skipped",
-    "yaml.disableSchemaDetection": [
-        "**/.github/workflows/*.yml",
-        "**/.github/workflows/*.yaml",
-        "**/.gitea/workflows/*.yml",
-        "**/.gitea/workflows/*.yaml",
-        "**/.forgejo/workflows/*.yml",
-        "**/.forgejo/workflows/*.yaml"
-    ],
     "python.analysis.typeCheckingMode": "standard"
 }

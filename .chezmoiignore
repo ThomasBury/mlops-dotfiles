@@ -28,7 +28,6 @@
 # profiles/, state.vscdb*, storage.json, ~/.vscode/extensions/ and
 # ~/.vscode-shared/ (state.vscdb can hold OAuth tokens). Comments only here —
 # a `.vscode` pattern would also hide the managed dot_vscode/ file above.
-# The Kilo MCP modify template manages only its Context7 entry in globalStorage.
 
 README.md
 LICENSE
