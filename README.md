@@ -19,6 +19,7 @@ the shell.
 - [Details](#details)
   - [Git identity and private files](#git-identity-and-private-files)
   - [Context7 setup](#context7-setup)
+  - [Optional VS Code MCP servers](#optional-vs-code-mcp-servers)
   - [Ghostty theme](#ghostty-theme)
   - [Shared agent instructions](#shared-agent-instructions)
   - [Shared agent workflows](#shared-agent-workflows)
@@ -198,9 +199,11 @@ does not revoke it.
 The OpenCode, Kilo and Codex `modify_` templates update their Context7 entries.
 They preserve unrelated settings. Rendering accepts JSONC where supported,
 normalizes formatting and drops comments.
-VS Code's native MCP file
-is managed in full. Project-level MCP settings can override these global
-ones.
+The Kilo CLI and VS Code extension share `~/.config/kilo/kilo.jsonc`.
+Any legacy Kilo `mcp_settings.json` in VS Code's `globalStorage` is local
+editor state.
+Chezmoi manages the full VS Code user MCP file, which declares GitHub and
+Context7.
 
 Enable this repository's local checks after cloning:
 
@@ -231,6 +234,53 @@ resolve the Python library, then query its documentation for reading a UTF-8
 file. Repeat in VS Code launched from the desktop, for both native MCP and
 Kilo. The offline test uses a dummy key and fake npm/server commands. It does
 not validate account access or the editor UI.
+
+### Optional VS Code MCP servers
+
+Add MarkItDown, DuckDB, or Firecrawl to `.vscode/mcp.json` in a project that
+uses them. Copy the server entries you need and the matching inputs.
+
+```json
+{
+  "servers": {
+    "markitdown": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["markitdown-mcp"],
+      "gallery": true
+    },
+    "duckdb": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-duckdb", "--db-path", "${input:duckdb_db_path}"],
+      "gallery": true
+    },
+    "firecrawl": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp@latest"],
+      "env": {
+        "FIRECRAWL_API_KEY": "${input:firecrawl_api_key}"
+      },
+      "gallery": true
+    }
+  },
+  "inputs": [
+    {
+      "id": "duckdb_db_path",
+      "type": "promptString",
+      "description": "Path to the DuckDB database file (e.g., /path/to/database.duckdb)",
+      "password": false
+    },
+    {
+      "id": "firecrawl_api_key",
+      "type": "promptString",
+      "description": "Firecrawl API Key (get from https://www.firecrawl.dev/app/api-keys)",
+      "password": true
+    }
+  ]
+}
+```
 
 ### Ghostty theme
 
@@ -574,7 +624,7 @@ private_dot_config/
 ├── {opencode,kilo}/AGENTS.md.tmpl    # global instruction wrappers
 ├── opencode/commands/               # wrappers for the shared workflows
 ├── ghostty/config                    # → ~/.config/ghostty/config
-└── Code/User/                        # settings.json, mcp.json.tmpl, Kilo MCP modifier
+└── Code/User/                        # settings.json and mcp.json.tmpl
 run_once_before_10-prereqs.sh.tmpl    # apt base packages (incl. fontconfig) + mise
 run_onchange_after_20-mise-install.sh.tmpl  # re-installs tools on config change
 run_onchange_after_25-context7-install.sh.tmpl  # installs the locked npm dependency tree
