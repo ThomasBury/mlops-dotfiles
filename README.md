@@ -13,7 +13,8 @@ the shell.
 
 - [Install](#install)
 - [What you get](#what-you-get)
-- [Daily use](#daily-use)
+- [Use the terminal](#use-the-terminal)
+- [Manage your dotfiles](#manage-your-dotfiles)
   - [Make a shared change](#make-a-shared-change)
   - [Refresh another machine](#refresh-another-machine)
 - [Details](#details)
@@ -88,7 +89,34 @@ what to change.
 | Assistants | chezmoi | Context7, shared instructions and skills, and VS Code native MCP |
 | Identity | chezmoi prompt | Local Git name and email |
 
-## Daily use
+## Use the terminal
+
+After `exec zsh`, try this in the dotfiles checkout. It shows how to search a
+file, open it by name, and retrieve the command you just ran.
+
+```zsh
+cd "$(chezmoi source-path)"
+rg -n 'chezmoi apply' README.md
+fv .
+```
+
+`rg` prints matching lines and their line numbers. In the `fv` picker, type
+`README.md` and press <kbd>Enter</kbd> to open it in Neovim. Press
+<kbd>Esc</kbd> to cancel the picker, or type `:q` and press <kbd>Enter</kbd>
+to leave Neovim. Back at the prompt, press <kbd>Ctrl</kbd>+<kbd>R</kbd>,
+type `rg -n`, and look for your search in Atuin. Press <kbd>Esc</kbd> to close
+the history picker.
+
+| I want to… | Start here |
+|---|---|
+| Jump back to a project or see what is in a directory | [Navigate and inspect](TERMINAL.md#navigate-and-inspect) |
+| Find a file, look up a command, or reuse shell history | [Find, edit, and get help](TERMINAL.md#find-edit-and-get-help) |
+| Review changes or find a pull request | [Work in a Git repository](TERMINAL.md#work-in-a-git-repository) |
+| Run Python or Node, load project variables, or preview local files | [Run a project](TERMINAL.md#run-a-project) |
+| Pull a value out of JSON or YAML | [Read structured files](TERMINAL.md#read-structured-files) |
+| Inspect containers, a cluster, or my cloud account | [Inspect containers and infrastructure](TERMINAL.md#inspect-containers-and-infrastructure) |
+
+## Manage your dotfiles
 
 Chezmoi reads managed files from your local checkout, including uncommitted edits.
 Commit and push the source changes when you want to share them with another
@@ -502,9 +530,6 @@ Python development tools such as ruff, ty, pytest, and IPython are not pinned
 globally. Their versions belong to each project, where `uv` reads
 `pyproject.toml`. Run a tool on demand with `uvx ruff check`, or install a
 stable user-level shim with `uv tool install ruff`.
-
-The shell keeps standard Emacs/readline key bindings. Ctrl-R belongs to
-[Atuin](https://atuin.sh/).
 
 ```bash
 # CLI tools (mise upgrade also updates the existing mise.lock)
