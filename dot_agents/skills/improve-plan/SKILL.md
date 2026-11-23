@@ -1,13 +1,13 @@
 ---
 name: improve-plan
-description: Critique and rewrite an existing plan as an executable sequence within its existing scope, with decisions and verification criteria.
+description: Critique and rewrite an existing plan as an executable sequence within its existing scope, with decisions and verification criteria. A deeper version of this plan, not a bigger version
 ---
 
 # Improve a plan
 
-Use the supplied plan, including a named file if provided, or the most recent relevant plan in the conversation. If neither is available, ask briefly for it.
+Use the supplied plan, including a named file if provided, or the most recent relevant plan in the conversation. If neither is available, ask briefly for it. The user wants a deeper version of this plan, not a bigger version.
 
-1. Briefly diagnose missing reasoning, assumptions, and failure modes. Identify the primary evidence, methods, tools, and viable alternatives needed to validate the plan. State how to verify success objectively.
-2. Rewrite the plan as an executable sequence with priorities, dependencies, decision points, deliverables, and verification steps. Prefer the simplest defensible approach and remove speculative work. Distinguish facts from assumptions and flag unresolved decisions.
+1. Briefly say what a top professional in this field would do here that the user is not asking for. Briefly diagnose missing reasoning, assumptions, and failure modes. Identify the primary evidence, methods, tools, and viable alternatives needed to validate the plan. State how to verify success objectively.
+2. Rewrite the plan as an executable sequence with priorities, dependencies, decision points, deliverables, and verification steps. Say what, other than you and the user, would show the result is right. Prefer the simplest defensible approach and remove speculative work. Distinguish facts from assumptions and flag unresolved decisions.
 
-Return only the diagnosis and revised plan. Leave implementation for a separate request.
+Return only the diagnosis and revised plan. Leave implementation for a separate request. Phrase in common english, not jargon.

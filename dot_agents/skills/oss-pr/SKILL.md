@@ -1,27 +1,28 @@
 ---
 name: oss-pr
-description: Deliver the current changes to an open-source project as a reviewed GitHub pull request, or resume publication for a specific merged PR.
+description: Deliver changes as a reviewed open-source GitHub PR, or publish or verify a release for a specified merged PR.
 ---
 
 # Deliver an open-source PR
 
-Use Git and `gh` within the user's authorized scope. Use the release steps only when invoked with `release <PR number or URL>`.
+Use Git and `gh` within the user's authorized scope. `$oss-pr` prepares a reviewed PR and leaves it open for a maintainer to merge. Run the release steps only with `$oss-pr release <PR number or URL>`.
 
-## Prepare and review the PR
+## Prepare the PR
 
-1. Inspect the branch, base diff, staged and unstaged changes, and repository conventions. Prepare the version bump and changelog if the project's release rules call for them. Run applicable checks, stage only relevant changes, and create a Conventional Commit. Preserve unrelated work.
-2. Push the branch and open or reuse its PR. Write a concise, plain-English title and description covering what changed, why, and how it was tested. Apply existing labels that fit. Keep the PR open for a maintainer to merge.
-3. Read the current PR head SHA from GitHub and verify that it is the commit you pushed. Post a PR conversation comment with `@codex review` on its own line and the full head SHA on a separate line. Request it even if GitHub started or completed an automatic review. If a manual request already covers that SHA, follow that request.
-4. Wait for the requested GitHub Codex review to finish. Poll the request comment, the Codex bot's status summary, and submitted reviews. Match the result to the request and the current head SHA. An eyes reaction means the review is in progress. Use the review's commit metadata, the bot summary's commit and trigger, or a completion reaction on the matching request to verify the result. Treat ambiguous evidence as unverified. Retry a failed request when the failure is recoverable.
-   - Recheck the GitHub head while polling either reviewer. If it changes, return to step 3 for a verified push within the task scope. If the change is unexpected, report the new SHA as a blocker.
-   - Give each reviewer up to 20 minutes per head by default. Use a different limit if the user or repository specifies one. If a reviewer explicitly reports unavailability or shows no sign of starting within the limit, report the review as unavailable. If a review is still running when the limit expires, report it as pending. Both outcomes block readiness.
-5. Read both reviewers' summaries and inline threads, including unresolved findings from earlier passes and findings listed outside the diff. Fix actionable Codex and CodeRabbit findings, verify the fixes, push them, and return to step 3 for the new SHA. Record why any disputed finding needs no change. Wait for CodeRabbit on the current head. Skip its review only if it explicitly reports exhausted credits for that review, and record the skip.
-6. Verify required CI and both review outcomes against the latest head before reporting readiness. Wait for required checks and follow the review wait limits in step 4. Report any reviews still pending, missing, or unavailable, any unresolved actionable findings, and any unmet required checks as blockers. Claim approval only when GitHub records it, and state which commit it covers.
+1. Inspect the branch and all staged, unstaged, and untracked changes. Fetch the intended base from its repository and fast-forward the local base when safe. Preserve local commits and working changes, and report any deferred sync. Reuse the existing PR branch or create a feature branch from the fetched base before staging.
+2. When the user or repository calls for release preparation, choose a practical SemVer bump based on what ships. Include the version and changelog updates the project expects in the reviewed PR. Otherwise, proceed with PR delivery only.
+3. Run applicable local checks. Organize changes into one or more Conventional Commits, with one commit per cohesive unit of work. Keep tests and documentation with the change they support. Include every in-scope file, including new files, and preserve unrelated work. Verify the entire staged diff before each commit and the combined PR diff before pushing.
+4. Push to the verified PR-head repository and open or update the PR against the intended base. Write a concise, plain-English title and description covering why, what changed, and how it was tested. Apply relevant existing labels.
 
-Report the PR URL and head SHA, the Codex request and review links where available, how findings were handled, CI and CodeRabbit results, version and release status, and any blockers.
+## Review the final commit
+
+1. Verify the GitHub PR head matches the commit you pushed. Post `@codex review` on its own line and the full head SHA on the next line, unless a manual request already covers that commit. Verify completion against the matching request and current head. An eyes reaction indicates progress.
+2. Wait for both reviewers and required CI. Recheck the GitHub head while polling. If it changes unexpectedly, stop and report the new SHA as a blocker. Allow each reviewer up to 20 minutes per commit unless the user or repository specifies otherwise, and retry recoverable failures within that window. Skip CodeRabbit only on explicit credit exhaustion for the current review and report the skip.
+3. Assess both bots' summaries and inline findings, including unresolved findings from earlier reviews and findings outside the diff. Fix actionable issues, explain disputed findings, verify fixes, and repeat on each new push.
+4. Report readiness only when required CI passes on the latest GitHub head, Codex review is verified, and CodeRabbit review is verified or has the explicit credit skip. Confirm all actionable findings are handled and recheck for in-scope changes still local. Report unmet readiness criteria as blockers, with the PR URL, head SHA, review links and outcomes, CI, and version status. Claim approval only when GitHub records it for that commit.
 
 ## Release after merge
 
-1. Resolve the specified PR in the intended repository. Confirm GitHub marks it merged and gives a merge commit and target branch. Stop if the PR is unmerged. Fetch the target branch from the PR's base repository, verify that the merge commit is reachable from that branch, and read the intended version from the project files at that commit.
-2. Follow the project's tag and release conventions. Stop if the intended version or tag is ambiguous. Check local and remote tags and the GitHub release. Resolve an annotated tag to its commit. Stop on conflicting tags or release details. If the matching release already exists, report its status and URL. If automation owns publication, verify its status and leave publication to it.
-3. For manual publication, create the intended tag at the verified merge commit if needed. Reuse a matching existing tag. Push only that tag if it is missing remotely, then run `gh release create <tag> --verify-tag` with the project's release notes and options. Verify the published release and report its URL, version, commit, and any blockers.
+1. Confirm GitHub marks the specified PR merged and its merge commit is reachable from the fetched target branch. Determine the intended version for that commit from the project's release rules.
+2. Check local and remote tags and any existing release in the base repository. Resolve annotated tags to their commits and verify the intended tag points to the merge commit if it exists. Stop on ambiguous or conflicting versions, tags, or release details.
+3. Verify a matching existing release, or verify the automation run for that version and commit when it owns publication. Otherwise, create or reuse the matching tag and push only that tag to the base repository if missing remotely. Verify the remote tag target before running `gh release create <tag> --verify-tag` with the project's release options. Verify and report the release state, URL, version, tag target, and any blockers. Fast-forward the local base when safe.
