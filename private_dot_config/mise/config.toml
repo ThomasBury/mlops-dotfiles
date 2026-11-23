@@ -40,10 +40,13 @@ zoxide = "latest"
 direnv = "latest"
 
 fzf = "latest"
+television = "latest"
 fd = "latest"
 ripgrep = "latest"
 eza = "latest"
 bat = "latest"
+# Use the official release directly so mise can lock its Linux ARM64 binaries.
+"github:tldr-pages/tlrc" = "latest" # Provides `tldr`.
 
 # ---------------------------------------------------------------------------
 # Structured data

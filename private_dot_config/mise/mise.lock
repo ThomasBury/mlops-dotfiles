@@ -359,6 +359,53 @@ url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_windows_
 url_api = "https://api.github.com/repos/cli/cli/releases/assets/565857681"
 provenance = "github-attestations"
 
+[[tools."github:tldr-pages/tlrc"]]
+version = "1.13.1"
+backend = "github:tldr-pages/tlrc"
+specifiers = ["latest"]
+
+[tools."github:tldr-pages/tlrc"."platforms.linux-arm64"]
+checksum = "sha256:b58399caf415f9acf35e1079d404458abea1ca098dcdb273363d1966428363cb"
+url = "https://github.com/tldr-pages/tlrc/releases/download/v1.13.1/tlrc-v1.13.1-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/tldr-pages/tlrc/releases/assets/427272525"
+provenance = "github-attestations"
+
+[tools."github:tldr-pages/tlrc"."platforms.linux-arm64-musl"]
+checksum = "sha256:f2e52e567d22301ea926095eef97daefe2a60c2bea6222ecc27136a9c338e9f7"
+url = "https://github.com/tldr-pages/tlrc/releases/download/v1.13.1/tlrc-v1.13.1-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/tldr-pages/tlrc/releases/assets/427273232"
+provenance = "github-attestations"
+
+[tools."github:tldr-pages/tlrc"."platforms.linux-x64"]
+checksum = "sha256:a0d7d963f2bced8a4fa7ab1a42f24140abdb40ba6033f0996dea2e826e341819"
+url = "https://github.com/tldr-pages/tlrc/releases/download/v1.13.1/tlrc-v1.13.1-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/tldr-pages/tlrc/releases/assets/427272471"
+provenance = "github-attestations"
+
+[tools."github:tldr-pages/tlrc"."platforms.linux-x64-musl"]
+checksum = "sha256:e63b80e180b956ae2114c39d7fb10e607ffaa46b6d8c370d90868389a228584d"
+url = "https://github.com/tldr-pages/tlrc/releases/download/v1.13.1/tlrc-v1.13.1-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/tldr-pages/tlrc/releases/assets/427272680"
+provenance = "github-attestations"
+
+[tools."github:tldr-pages/tlrc"."platforms.macos-arm64"]
+checksum = "sha256:7dd8c585da66c9977ecff5d50a93c4c77a946322668b7ab2e0082dd07d11eddf"
+url = "https://github.com/tldr-pages/tlrc/releases/download/v1.13.1/tlrc-v1.13.1-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/tldr-pages/tlrc/releases/assets/427272020"
+provenance = "github-attestations"
+
+[tools."github:tldr-pages/tlrc"."platforms.macos-x64"]
+checksum = "sha256:2db4a3c772ae30243cd6bb4231cc43eff005d311618666af91e49662310b8e8b"
+url = "https://github.com/tldr-pages/tlrc/releases/download/v1.13.1/tlrc-v1.13.1-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/tldr-pages/tlrc/releases/assets/427271988"
+provenance = "github-attestations"
+
+[tools."github:tldr-pages/tlrc"."platforms.windows-x64"]
+checksum = "sha256:8b85477c935365008214be7a5fd319c56855175ff0c4e8cc2d01fa94accdd210"
+url = "https://github.com/tldr-pages/tlrc/releases/download/v1.13.1/tlrc-v1.13.1-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/tldr-pages/tlrc/releases/assets/427273039"
+provenance = "github-attestations"
+
 [[tools.helm]]
 version = "4.3.0"
 backend = "aqua:helm/helm"
@@ -854,6 +901,41 @@ url_api = "https://api.github.com/repos/stern/stern/releases/assets/410516129"
 checksum = "sha256:22ed0c8eb0c15cbd2651c944517f6c06aa6ffa11467be55f7673f7242f1bafd3"
 url = "https://github.com/stern/stern/releases/download/v1.34.0/stern_1.34.0_windows_amd64.tar.gz"
 url_api = "https://api.github.com/repos/stern/stern/releases/assets/410516130"
+
+[[tools.television]]
+version = "0.15.9"
+backend = "aqua:alexpasmantier/television"
+specifiers = ["latest"]
+
+[tools.television."platforms.linux-arm64"]
+checksum = "sha256:78a246170c9d83bea0f0c4a3fa8c9bc5cee80bbe66d34946d06fdc5a17a2cd1a"
+url = "https://github.com/alexpasmantier/television/releases/download/0.15.9/tv-0.15.9-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/alexpasmantier/television/releases/assets/447569994"
+
+[tools.television."platforms.linux-x64"]
+checksum = "sha256:87d47d071f3c3bac939b1e9b2c63e45c299c9ad31cf8711f63dede614d0c6608"
+url = "https://github.com/alexpasmantier/television/releases/download/0.15.9/tv-0.15.9-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/alexpasmantier/television/releases/assets/447569483"
+
+[tools.television."platforms.linux-x64-musl"]
+checksum = "sha256:3410e34132f4e44fd439c711f08c15b3a21f51630657cb03f248b2c7aef3e29a"
+url = "https://github.com/alexpasmantier/television/releases/download/0.15.9/tv-0.15.9-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/alexpasmantier/television/releases/assets/447569675"
+
+[tools.television."platforms.macos-arm64"]
+checksum = "sha256:94ae7177d499f74e7544243ffe9c82371183ca11a6363f198a4b3d0e29f82732"
+url = "https://github.com/alexpasmantier/television/releases/download/0.15.9/tv-0.15.9-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/alexpasmantier/television/releases/assets/447568866"
+
+[tools.television."platforms.macos-x64"]
+checksum = "sha256:0c6029ced92ddcf8218a8ce9a9d605d232898e2df021ae212d38c66f6c3abaad"
+url = "https://github.com/alexpasmantier/television/releases/download/0.15.9/tv-0.15.9-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/alexpasmantier/television/releases/assets/447570866"
+
+[tools.television."platforms.windows-x64"]
+checksum = "sha256:b6ecb3bf2587d8068a50c855671b2b693acaf172fcddb6542b6f80db1e38b681"
+url = "https://github.com/alexpasmantier/television/releases/download/0.15.9/tv-0.15.9-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/alexpasmantier/television/releases/assets/447571006"
 
 [[tools.terraform]]
 version = "1.16.3"

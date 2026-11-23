@@ -143,10 +143,12 @@ TOOLS=(
     direnv
 
     fzf
+    tv
     fd
     rg
     eza
     bat
+    tldr
 
     jq
     yq
