@@ -108,8 +108,13 @@ printf 'installed\\n' >> "$HOME/npm-calls"
     assert result.returncode == 0, result.stderr
     assert (home / "npm-calls").read_text() == "installed\ninstalled\n"
     command = [str(home / ".local/bin/context7-mcp")]
+    codex_defaults = {
+        "approval_policy": "on-request",
+        "approvals_reviewer": "auto_review",
+        "sandbox_mode": "workspace-write",
+    }
     fixtures = {
-        ".codex/config.toml": ('model = "keep"\n[mcp_servers.context7]\ncommand = "old"\nargs = ["' + TOKEN + '"]\n', "mcp_servers", {"command": command[0]}),
+        ".codex/config.toml": ('model = "keep"\npersonality = "pragmatic"\n[mcp_servers.context7]\ncommand = "old"\nargs = ["' + TOKEN + '"]\n', "mcp_servers", {"command": command[0]}),
         ".config/opencode/opencode.jsonc": ('{// keep values, accept JSONC\n"plugin":["keep"],"mcp":{"context7":{"headers":{"CONTEXT7_API_KEY":"' + TOKEN + '"}},"servers":{"other":{"type":"local","command":["keep"]}}},}', "mcp", None),
         ".config/kilo/kilo.jsonc": (json.dumps({"model": "keep", "mcp": {"context7": {"environment": {"CONTEXT7_API_KEY": TOKEN}}}}), "mcp", {"type": "local", "command": command}),
         ".config/Code/User/globalStorage/kilocode.kilo-code/settings/mcp_settings.json": (json.dumps({"keep": True, "mcpServers": {"context7": {"args": [TOKEN]}}}), "mcpServers", {"command": command[0]}),
@@ -136,12 +141,35 @@ printf 'installed\\n' >> "$HOME/npm-calls"
             assert data["model"] == "keep"
         if "mcp_settings" in name:
             assert data["keep"] is True
+        if name == ".codex/config.toml":
+            assert {key: data[key] for key in codex_defaults} == codex_defaults
+            assert "personality" not in data
         target.write_text(result.stdout)
         assert run(args, env=env).stdout == result.stdout
         # Empty targets must work on a fresh machine too.
         target.unlink()
         result = run(args, env=env)
         assert result.returncode == 0, result.stderr
+        if name == ".codex/config.toml":
+            data = tomllib.loads(result.stdout)
+            assert {key: data[key] for key in codex_defaults} == codex_defaults
+
+    # Keep explicitly chosen approval settings and either kind of sandbox selector.
+    target = home / ".codex/config.toml"
+    args = [chezmoi, "--config", str(config), "--source", str(ROOT), "--destination", str(home), "cat", str(target)]
+    for selector, value in (("sandbox_mode", "read-only"), ("default_permissions", ":read-only")):
+        target.write_text(
+            'approval_policy = "never"\napprovals_reviewer = "user"\npersonality = "none"\n'
+            f'{selector} = "{value}"\n'
+        )
+        result = run(args, env=env)
+        assert result.returncode == 0, result.stderr
+        data = tomllib.loads(result.stdout)
+        assert data["approval_policy"] == "never"
+        assert data["approvals_reviewer"] == "user"
+        assert data["personality"] == "none"
+        assert data[selector] == value
+        assert "sandbox_mode" not in data or selector == "sandbox_mode"
 
     # Deliver the real launcher and manifests without running workstation installers.
     launcher_target = home / ".local/bin/context7-mcp"
