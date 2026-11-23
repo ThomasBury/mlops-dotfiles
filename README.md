@@ -154,8 +154,8 @@ when a saved answer is missing, so `chezmoi update --init` reuses your
 answers.
 
 Put machine-specific shell and Git settings in `~/.zshrc.local` and
-`~/.gitconfig.local`. They are unversioned and loaded automatically when
-present.
+`~/.gitconfig.local`. Zsh and Git load these unversioned files after the shared
+settings when present, and `chezmoi apply` leaves them alone.
 
 `~/.aws` and `~/.azure` are never managed. Their contents are
 machine-specific, may include credentials, and belong to interactive setup
