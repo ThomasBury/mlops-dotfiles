@@ -46,7 +46,7 @@ path=(
 )
 
 [[ -d "$HOME/bin" ]] && path=("$HOME/bin" $path)
-
+[[ -x "$HOME/.kilo/bin/kilo" ]] && path=("$HOME/.kilo/bin" $path)
 export PATH
 
 # -----------------------------------------------------------------------------
