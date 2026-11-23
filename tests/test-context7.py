@@ -117,7 +117,6 @@ printf 'installed\\n' >> "$HOME/npm-calls"
         ".codex/config.toml": ('model = "keep"\npersonality = "pragmatic"\n[mcp_servers.context7]\ncommand = "old"\nargs = ["' + TOKEN + '"]\n', "mcp_servers", {"command": command[0]}),
         ".config/opencode/opencode.jsonc": ('{// keep values, accept JSONC\n"plugin":["keep"],"mcp":{"context7":{"headers":{"CONTEXT7_API_KEY":"' + TOKEN + '"}},"servers":{"other":{"type":"local","command":["keep"]}}},}', "mcp", None),
         ".config/kilo/kilo.jsonc": (json.dumps({"model": "keep", "mcp": {"context7": {"environment": {"CONTEXT7_API_KEY": TOKEN}}}}), "mcp", {"type": "local", "command": command}),
-        ".config/Code/User/globalStorage/kilocode.kilo-code/settings/mcp_settings.json": (json.dumps({"keep": True, "mcpServers": {"context7": {"args": [TOKEN]}}}), "mcpServers", {"command": command[0]}),
         ".config/Code/User/mcp.json": ("{}", "servers", {"type": "stdio", "command": command[0], "gallery": True}),
     }
     env["XDG_CONFIG_HOME"] = str(home / ".config")
@@ -137,10 +136,11 @@ printf 'installed\\n' >> "$HOME/npm-calls"
             assert data["plugin"] == ["keep"]
         else:
             assert data[section]["context7"] == expected
+        if name == ".config/Code/User/mcp.json":
+            assert set(data["servers"]) == {"github", "context7"}
+            assert "inputs" not in data
         if "model" in data:
             assert data["model"] == "keep"
-        if "mcp_settings" in name:
-            assert data["keep"] is True
         if name == ".codex/config.toml":
             assert {key: data[key] for key in codex_defaults} == codex_defaults
             assert "personality" not in data
@@ -153,6 +153,31 @@ printf 'installed\\n' >> "$HOME/npm-calls"
         if name == ".codex/config.toml":
             data = tomllib.loads(result.stdout)
             assert {key: data[key] for key in codex_defaults} == codex_defaults
+
+    # Apply the shared Kilo and VS Code configs to a fresh home, then test an upgrade.
+    kilo_home = base / "kilo-apply-home"
+    kilo_home.mkdir()
+    kilo_config = kilo_home / ".config/kilo/kilo.jsonc"
+    vscode_user = kilo_home / ".config/Code/User"
+    legacy_kilo_config = vscode_user / "globalStorage/kilocode.kilo-code/settings/mcp_settings.json"
+    kilo_env = {**env, "HOME": str(kilo_home), "XDG_CONFIG_HOME": str(kilo_home / ".config")}
+    apply_kilo = [chezmoi, "--config", str(config), "--source", str(ROOT),
+                  "--destination", str(kilo_home), "--persistent-state", str(base / "kilo.db"),
+                  "--refresh-externals=never", "apply", "--exclude", "scripts", "--parent-dirs",
+                  str(kilo_config), str(vscode_user)]
+    result = run(apply_kilo, env=kilo_env)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(kilo_config.read_text())["mcp"]["context7"] == {
+        "type": "local",
+        "command": [str(kilo_home / ".local/bin/context7-mcp")],
+    }
+    assert not legacy_kilo_config.exists()
+    legacy_kilo_config.parent.mkdir(parents=True, exist_ok=True)
+    local_settings = b'{\n  "mcpServers": { "context7": { "command": "old-launcher" } }\n}\n'
+    legacy_kilo_config.write_bytes(local_settings)
+    result = run(apply_kilo, env=kilo_env)
+    assert result.returncode == 0, result.stderr
+    assert legacy_kilo_config.read_bytes() == local_settings
 
     # Keep explicitly chosen approval settings and either kind of sandbox selector.
     target = home / ".codex/config.toml"
@@ -230,4 +255,4 @@ printf 'installed\\n' >> "$HOME/npm-calls"
         assert run([hook], cwd=repo, input=f"refs/heads/main {local} refs/heads/main {remote}\n").returncode == 0
     assert run([hook], cwd=repo, input="malformed\n").returncode != 0
 
-print("PASS: launcher, private key storage, client renders, staged and outgoing token checks")
+print("PASS: launcher, private key storage, client renders, Kilo apply, staged and outgoing token checks")
