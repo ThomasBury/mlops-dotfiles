@@ -7,9 +7,8 @@ on:
 permissions:
   contents: read
 
-# CI validates configuration rendering and shell loading only.
-# The full toolchain install is deliberately skipped here; use
-# a fresh machine or container to verify the full bootstrap.
+# Fast checks for configuration rendering and shell loading.
+# bootstrap.yml runs the full install when toolchain inputs change.
 jobs:
   apply:
     runs-on: ubuntu-latest

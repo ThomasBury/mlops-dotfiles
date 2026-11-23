@@ -15,6 +15,15 @@ log() {
     printf '\n\033[1;34m==>\033[0m %s\n' "$*"
 }
 
+check_apply_status() {
+    local status
+    status="$("$HOME/.local/bin/chezmoi" --source /dotfiles status)"
+    if [[ -n "$status" ]]; then
+        printf 'Changes pending %s the second apply:\n%s\n' "$1" "$status" >&2
+        exit 1
+    fi
+}
+
 log "identity: seeding non-interactive chezmoi config"
 mkdir -p "$HOME/.config/chezmoi"
 cat > "$HOME/.config/chezmoi/chezmoi.toml" <<'EOF'
@@ -32,6 +41,15 @@ export PATH="$HOME/.local/bin:$PATH"
 log "applying dotfiles from /dotfiles (full bootstrap: apt, mise, tools)"
 # GITHUB_TOKEN avoids unauthenticated GitHub API rate limits (60 req/h).
 "$HOME/.local/bin/chezmoi" init --source /dotfiles --apply
+
+log "applying the same dotfiles again"
+check_apply_status before
+"$HOME/.local/bin/chezmoi" --source /dotfiles apply --verbose
+check_apply_status after
+
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+log "verifying installed versions and the Azure dependency lock"
+python3 /dotfiles/tests/docker/verify-toolchain.py
 
 log "running full local test suite"
 python3 /dotfiles/tests/test-installers.py

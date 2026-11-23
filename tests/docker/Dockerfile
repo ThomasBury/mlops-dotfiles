@@ -1,11 +1,11 @@
 # =============================================================================
 # E2E harness base image: a fresh laptop, nothing more.
 #
-# Only ca-certificates/curl/sudo are provided. zsh, git, mise and the whole
-# 26-tool toolchain must come from the dotfiles bootstrap scripts themselves.
+# Only ca-certificates/curl/sudo are provided. The dotfiles bootstrap installs
+# zsh, git, mise and the managed toolchain.
 # =============================================================================
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

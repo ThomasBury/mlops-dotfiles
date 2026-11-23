@@ -1,0 +1,38 @@
+name: Ubuntu bootstrap
+
+on:
+  push:
+    paths: &bootstrap_paths
+      - '.github/workflows/bootstrap.yml'
+      - '.chezmoiignore'
+      - '.chezmoiexternal.toml'
+      - '.chezmoi.toml.tmpl'
+      - 'dot_zshrc'
+      - 'private_dot_config/mise/**'
+      - 'dot_local/bin/executable_context7-mcp'
+      - 'dot_local/share/context7-mcp/**'
+      - 'run_*.sh.tmpl'
+      - 'tests/docker-bootstrap.sh'
+      - 'tests/docker/**'
+      - 'tests/test-*.py'
+      - 'tests/test-zsh.sh'
+      - 'scripts/*context7*.py'
+  pull_request:
+    paths: *bootstrap_paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Install and verify from a clean Ubuntu 26.04 container
+        run: tests/docker-bootstrap.sh --fresh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

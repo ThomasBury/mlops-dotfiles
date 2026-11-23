@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Local end-to-end bootstrap test in Docker (not GitHub Actions).
+# End-to-end bootstrap test in Docker.
 #
 #   tests/docker-bootstrap.sh           # cached: mise downloads persist
-#   tests/docker-bootstrap.sh --fresh   # cold: drop caches, full re-download
+#   tests/docker-bootstrap.sh --fresh   # cold: no cached tools or downloads
 #
-# Simulates a fresh Ubuntu 24.04 machine: minimal image (no zsh, no git, no
-# mise), then the dotfiles bootstrap installs everything and tests/test-zsh.sh
-# verifies the result. The full tool install is heavy; that is exactly why this
-# is not part of GitHub Actions CI.
+# Starts from Ubuntu 26.04 without zsh, git or mise. Toolchain changes run the
+# cold install in CI.
 #
 # Requirements: docker, network. GITHUB_TOKEN (or `gh auth token`) avoids
 # GitHub API rate limits during mise installs.
@@ -37,22 +35,21 @@ fi
 printf '\033[1;34m==>\033[0m building image\n'
 docker build -t "$IMAGE" "$REPO_ROOT/tests/docker"
 
-if ((FRESH)); then
-    printf '\033[1;34m==>\033[0m --fresh: removing cached toolchain volumes\n'
-    docker volume rm -f "$CACHE_VOL" "$DATA_VOL" >/dev/null
-fi
-
 printf '\033[1;34m==>\033[0m running bootstrap + tests%s\n' \
     "$([[ $FRESH == 1 ]] && printf ' (cold install, 10-20+ min first time)' || printf '')"
 
 # Repo is mounted read-only: the container must not mutate the working tree.
 # Volumes persist the mise download cache and installed tools between runs.
-tty_flag=""
-[[ -t 0 ]] && tty_flag="-t"
+docker_args=(--rm -i)
+[[ -t 0 ]] && docker_args+=(-t)
+if ((!FRESH)); then
+    docker_args+=(
+        -v "$CACHE_VOL:/home/tester/.cache/mise"
+        -v "$DATA_VOL:/home/tester/.local/share/mise"
+    )
+fi
 
-exec docker run --rm -i $tty_flag \
+exec docker run "${docker_args[@]}" \
     -e GITHUB_TOKEN \
     -v "$REPO_ROOT:/dotfiles:ro" \
-    -v "$CACHE_VOL:/home/tester/.cache/mise" \
-    -v "$DATA_VOL:/home/tester/.local/share/mise" \
     "$IMAGE"

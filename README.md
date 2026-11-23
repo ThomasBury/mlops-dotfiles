@@ -490,9 +490,13 @@ Where to make each change:
 ### Updating tools
 
 CLI versions live in `mise.lock` and install with
-`mise install --locked`, so each machine gets the same versions. Oh My Zsh
-and the Zsh plugins are not pinned: new machines get their latest state, and
-you choose when to refresh them.
+`mise install --locked`. Azure CLI also has a Python dependency lock under
+`private_dot_config/mise/dot_mise/locks/azure/`. Keep the generated dependency
+files with `mise.lock` when updating Azure CLI. Run
+`mise lock --global --bump azure` against the applied mise config, then copy
+the updated `mise.lock` and the referenced `.mise/locks/azure/` directory back
+to the managed source paths. Oh My Zsh and its three plugins come from
+commit-specific archives with checksums in `.chezmoiexternal.toml`.
 
 Python development tools such as ruff, ty, pytest, and IPython are not pinned
 globally. Their versions belong to each project, where `uv` reads
@@ -509,8 +513,9 @@ mise upgrade --local
 chezmoi apply
 # commit the changed config.toml / mise.lock
 
-# Oh My Zsh and Zsh plugins
-chezmoi apply --refresh-externals
+# Oh My Zsh and Zsh plugins (review new commits and update URLs and checksums)
+$EDITOR "$(chezmoi source-path)/.chezmoiexternal.toml"
+chezmoi apply
 
 # Context7 (edit the exact package version, then refresh its dependency lock)
 cd "$(chezmoi source-path)/dot_local/share/context7-mcp"
@@ -552,25 +557,25 @@ tests/test-zsh.sh
 
 This checks Zsh syntax, loads the configuration in an isolated `ZDOTDIR`,
 verifies key bindings, checks tool paths through mise, and runs Node and npm
-to catch missing runtime libraries. CI applies the dotfiles, checks Zsh
-syntax, and loads an interactive shell on
-every push. It skips the full toolchain install.
+to catch missing runtime libraries. The fast CI workflow applies the dotfiles,
+checks Zsh syntax, and loads an interactive shell on each push and pull
+request.
 
 For a hands-on check in a clean Ubuntu container, follow the
 [manual verification guide](tests/manual-verification.md).
 
 ### Full bootstrap test
 
-This simulates a fresh Ubuntu 24.04 machine in a container and runs the real
-bootstrap: `apt` packages, mise, the pinned toolchain, Oh My Zsh and its
-plugins, and the Nerd Font. It skips VS Code extensions because the container
-has no `code` command, then runs the full test suite. It stays out of GitHub
-Actions because repeated toolchain downloads risk network and API rate
-limits.
+The [bootstrap workflow](.github/workflows/bootstrap.yml) runs the cold
+install in an Ubuntu 26.04 container when toolchain inputs change. It installs
+the `apt` prerequisites, mise tools, Context7, the shell archives, and the Nerd
+Font. It applies the same dotfiles again, checks that chezmoi has no pending
+changes, and verifies the installed runtime versions and Azure dependency
+lock.
 
 ```bash
 tests/docker-bootstrap.sh          # cached: mise downloads persist between runs
-tests/docker-bootstrap.sh --fresh  # cold: wipe caches, full re-download
+tests/docker-bootstrap.sh --fresh  # cold: run without the cache or tool volumes
 ```
 
 You need Docker and network access. `GITHUB_TOKEN` avoids GitHub API rate
@@ -613,7 +618,7 @@ Font. Delete those by hand only if you want a clean slate.
 ```text
 .chezmoi.toml.tmpl                    # prompts for git name/email on init
 .chezmoitemplates/AGENTS.md           # shared engineering instructions
-.chezmoiexternal.toml                 # Oh My Zsh + plugins (refreshPeriod = 0)
+.chezmoiexternal.toml                 # pinned Oh My Zsh and plugin archives
 .chezmoiignore                        # repo docs + ~/.aws, ~/.azure excluded
 dot_agents/skills/                    # shared agent workflows
 dot_zshrc                             # → ~/.zshrc
@@ -641,7 +646,7 @@ tests/test-agent-instructions.py      # offline instruction and workflow deliver
 tests/test-context7.py                # offline launcher/config/hook checks
 tests/test-installers.py              # offline prerequisite and editor installer checks
 tests/test-zsh.sh                     # local shell/toolchain test suite
-tests/docker-bootstrap.sh             # local Docker fresh-machine E2E (not CI)
+tests/docker-bootstrap.sh             # Docker bootstrap test for local use and CI
 ```
 
 ## License

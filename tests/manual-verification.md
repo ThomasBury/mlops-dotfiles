@@ -48,7 +48,7 @@ grep '^PRETTY_NAME=' /etc/os-release
 command -v git zsh mise chezmoi || true
 ```
 
-The image should report Ubuntu 24.04, and the four commands should initially be
+The image should report Ubuntu 26.04, and the four commands should initially be
 absent.
 
 ## 2. Seed the non-interactive chezmoi answers

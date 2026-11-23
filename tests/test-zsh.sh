@@ -7,7 +7,7 @@
 #
 # Defaults to the rendered ~/.zshrc. Tests it in an isolated ZDOTDIR (the
 # live interactive session is never touched) and verifies the mise-managed
-# toolchain. CI runs only a syntax + load check; run this locally after
+# toolchain. The Docker bootstrap runs this suite in CI. Run it locally after
 # `chezmoi apply`.
 # =============================================================================
 
