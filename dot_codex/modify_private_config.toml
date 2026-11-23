@@ -1,3 +1,15 @@
 {{- /* chezmoi:modify-template */ -}}
 {{- $config := .chezmoi.stdin | fromToml -}}
+{{- if not (hasKey $config "approval_policy") -}}
+{{-   $config = setValueAtPath "approval_policy" "on-request" $config -}}
+{{- end -}}
+{{- if not (hasKey $config "approvals_reviewer") -}}
+{{-   $config = setValueAtPath "approvals_reviewer" "auto_review" $config -}}
+{{- end -}}
+{{- if and (not (hasKey $config "sandbox_mode")) (not (hasKey $config "default_permissions")) -}}
+{{-   $config = setValueAtPath "sandbox_mode" "workspace-write" $config -}}
+{{- end -}}
+{{- if eq (index $config "personality") "pragmatic" -}}
+{{-   $config = deleteValueAtPath "personality" $config -}}
+{{- end -}}
 {{ $config | setValueAtPath "mcp_servers.context7" (dict "command" (joinPath .chezmoi.homeDir ".local/bin/context7-mcp")) | toToml }}
